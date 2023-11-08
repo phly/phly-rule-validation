@@ -6,10 +6,10 @@ namespace Phly\RuleValidation;
 
 final class CallbackRule implements Rule
 {
-    /** @var pure-callable(mixed, array): Result */
+    /** @var callable(mixed, array): Result */
     private $callback;
 
-    /** @param pure-callable(mixed, array): Result $callback */
+    /** @param callable(mixed, array): Result $callback */
     public function __construct(
         private string $key,
         callable $callback,

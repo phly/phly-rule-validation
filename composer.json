@@ -1,0 +1,54 @@
+{
+    "name": "phly/phly-rule-validation",
+    "description": "Simple rule-based validation framework",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "validation"
+    ],
+    "support": {
+        "issues": "https://github.com/phly/phly-rule-validation/issues",
+        "source": "https://github.com/phly/phly-rule-validation",
+        "rss": "https://github.com/phly/phly-rule-validation/releases.atom"
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.99"
+        },
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "require": {
+        "php": "~8.2.0",
+        "ramsey/collection": "^2.0"
+    },
+    "require-dev": {
+        "laminas/laminas-coding-standard": "~2.5.0",
+        "phpunit/phpunit": "^10.1",
+        "psalm/plugin-phpunit": "^0.18.4",
+        "vimeo/psalm": "^5.7.7",
+        "roave/security-advisories": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Phly\\RuleValidation\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PhlyTest\\": "test/"
+        }
+    },
+    "scripts": {
+        "check": [
+            "@cs-check",
+            "@test"
+        ],
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "test": "phpunit --colors=always",
+        "test-coverage": "phpunit --colors=always --coverage-clover clover.xml"
+    }
+}

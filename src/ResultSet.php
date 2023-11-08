@@ -39,10 +39,10 @@ final class ResultSet extends AbstractCollection
     {
         $messages = [];
         foreach ($this as $key => $result) {
+            /** @var string $key */
             if ($result->isValid) {
                 continue;
             }
-            /** @var string $key */
             $messages[$key] = $result->message;
         }
         return $messages;

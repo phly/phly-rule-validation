@@ -11,8 +11,6 @@ use Ramsey\Collection\AbstractCollection;
  */
 final class ResultSet extends AbstractCollection
 {
-    private ?bool $isValid = null;
-
     public function getType(): string
     {
         return Result::class;
@@ -20,18 +18,12 @@ final class ResultSet extends AbstractCollection
 
     public function isValid(): bool
     {
-        if (null !== $this->isValid) {
-            return $this->isValid;
-        }
-
-        $this->isValid = $this->reduce(function (bool $isValid, Result $result): bool {
+        return $this->reduce(function (bool $isValid, Result $result): bool {
             if ($isValid === false) {
                 return false;
             }
             return $result->isValid;
         }, true);
-
-        return $this->isValid;
     }
 
     /** @return array<array-key, null|string> */

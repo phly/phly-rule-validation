@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhlyTest\RuleValidation;
 
+use Phly\RuleValidation\Exception\ResultSetFrozenException;
 use Phly\RuleValidation\Exception\UnknownResultException;
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\ResultSet;
@@ -98,5 +99,14 @@ class ResultSetTest extends TestCase
 
         $this->expectException(UnknownResultException::class);
         $resultSet->getResultForKey('first');
+    }
+
+    public function testAttemptingToAddAResultToAFrozenResultSetRaisesException(): void
+    {
+        $resultSet = new ResultSet();
+        $resultSet->freeze();
+
+        $this->expectException(ResultSetFrozenException::class);
+        $resultSet->add(Result::forValidValue('flag', true));
     }
 }

@@ -65,6 +65,7 @@ class RuleSet implements IteratorAggregate
             $resultSet->add(Result::forValidValue($key, $rule->default()));
         }
 
+        $resultSet->freeze();
         return $resultSet;
     }
 

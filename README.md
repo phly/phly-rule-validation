@@ -277,6 +277,7 @@ When validating a set of data, `RuleSet` does the following:
 - If the `Rule::key()` **does not exist** in the `$data`, but the rule is **not required**, it generates a valid `Result` using the rule's `Rule::default()` value.
 
 Results are aggregated in a `Phly\RuleValidation\ResultSet` instance, where the keys correspond to the associated `Rule::key()`.
+The `ResultSet` instance returned is _frozen_, and no additional `Result` instances may be `add()`ed to it; attempts to do so will result in a `Phly\Exception\ResultSetFrozenException`.
 
 ### Customizing "missing value" messages
 
@@ -339,10 +340,19 @@ final class ResultSet implements IteratorAggregate
 
     /** @throws Phly\RuleValidation\Exception\UnknownResultException */
     public function getResultForKey(string $key): Result;
+
+    /**
+     * Freeze the result set
+     *
+     * Once called, no more results may be added to the result set.
+     */
+    public function freeze(): void
 }
 ```
 
 You can retrieve individual `Phly\RuleValidation\Result` instances using the `getResultForKey(string $key)` method.
+
+> Internally, `RuleSet` calls `freeze()` on a `ResultSet` before returning it from `RuleSet::validate()`.
 
 Access individual results when generating an HTML form:
 

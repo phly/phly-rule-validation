@@ -14,6 +14,8 @@ use function array_reduce;
 /** @template-implements IteratorAggregate<Result> */
 final class ResultSet implements IteratorAggregate
 {
+    private bool $frozen = false;
+
     /** @var array<string, Result> */
     private $results = [];
 
@@ -32,6 +34,10 @@ final class ResultSet implements IteratorAggregate
 
     public function add(Result $result): void
     {
+        if ($this->frozen) {
+            throw new Exception\ResultSetFrozenException();
+        }
+
         $key = $result->key;
         $this->guardForDuplicateKey($key);
         $this->results[$key] = $result;
@@ -85,6 +91,16 @@ final class ResultSet implements IteratorAggregate
             $values[$key] = $result->value;
         }
         return $values;
+    }
+
+    /**
+     * Freeze the result set
+     *
+     * Once called, no more results may be added to the result set.
+     */
+    public function freeze(): void
+    {
+        $this->frozen = true;
     }
 
     /** @throws Exception\DuplicateResultKeyException */

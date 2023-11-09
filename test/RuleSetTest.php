@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace PhlyTest\RuleValidation;
 
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
+use Phly\RuleValidation\Exception\ResultSetFrozenException;
 use Phly\RuleValidation\Result;
+use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
 use Phly\RuleValidation\RuleSet;
+use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 
 use function array_key_exists;
@@ -66,7 +69,7 @@ class RuleSetTest extends TestCase
         $this->assertCount(0, $result);
     }
 
-    public function testValidationReturnsAPopulatedResultSetWithAKeyMatchingEachRule(): void
+    public function testValidationReturnsAPopulatedResultSetWithAKeyMatchingEachRule(): ResultSet
     {
         $data = [
             'first'  => 'string',
@@ -91,6 +94,15 @@ class RuleSetTest extends TestCase
 
         $this->assertTrue($result->isValid());
         $this->assertEquals($expected, $result->getValues());
+
+        return $result;
+    }
+
+    #[Depends('testValidationReturnsAPopulatedResultSetWithAKeyMatchingEachRule')]
+    public function testResultSetOfValidationIsFrozen(ResultSet $resultSet): void
+    {
+        $this->expectException(ResultSetFrozenException::class);
+        $resultSet->add(Result::forValidValue('anotherInput', 'string'));
     }
 
     public function testValidationResultSetContainsResultForMissingValueIfARequiredRuleKeyIsNotInTheData(): void

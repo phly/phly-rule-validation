@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Phly\RuleValidation;
+namespace Phly\RuleValidation\Rule;
+
+use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Rule;
 
 use function get_debug_type;
 use function is_bool;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PhlyTest\RuleValidation;
+namespace PhlyTest\RuleValidation\Rule;
 
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\Rule\CallbackRule;

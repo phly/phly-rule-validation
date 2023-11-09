@@ -146,6 +146,15 @@ class BooleanRule implements Rule
 
 ### Shipped Rules
 
+#### BooleanRule
+
+The class `Phly\RuleValidation\Rule\BooleanRule` allows testing for boolean values.
+If the value is not boolean, validation fails.
+
+```php
+$rule = new BooleanRule(key: 'flag', required: true, default: true);
+```
+
 #### CallbackRule
 
 The class `Phly\RuleValidation\Rule\CallbackRule` allows providing a callback to execute during validation.
@@ -182,8 +191,8 @@ Using named arguments, you can create instances with different behavior:
 ```
 $callback = function (mixed $value, array $context, string $key): Result { /* ... */ };
 
-$rule1 = new CallbackRule('first', $callback, default: 'string');
-$rule2 = new CallbackRule('second', $callback, required: false);
+$rule1 = new CallbackRule(key: 'first', callback: $callback, default: 'string');
+$rule2 = new CallbackRule(key: 'second', callback: $callback, required: false);
 ```
 
 ## RuleSet behavior

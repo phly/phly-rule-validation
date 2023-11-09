@@ -7,6 +7,8 @@ namespace Phly\RuleValidation;
 // @todo Remove file-level phpcs:disable once PSR1 ruleset understands readonly classes
 final readonly class Result
 {
+    public const MISSING_MESSAGE = 'Missing required value';
+
     private function __construct(
         public bool $isValid,
         public mixed $value,
@@ -24,7 +26,7 @@ final readonly class Result
         return new self(isValid: false, value: $value, message: $message);
     }
 
-    public static function forMissingValue(string $message): self
+    public static function forMissingValue(string $message = self::MISSING_MESSAGE): self
     {
         return new self(isValid: false, value: null, message: $message);
     }

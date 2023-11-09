@@ -133,7 +133,7 @@ class RuleSetTest extends TestCase
         ];
 
         $expectedMessages = [
-            'third' => 'Missing required value for key third',
+            'third' => 'Missing required value',
         ];
 
         $ruleSet = new RuleSet();
@@ -172,6 +172,31 @@ class RuleSetTest extends TestCase
 
         $this->assertTrue($result->isValid());
         $this->assertEquals($expected, $result->getValues());
+    }
+
+    public function testValidationAllowsOverridingMissingValueMessageViaExtension(): void
+    {
+        $ruleSet = new class extends RuleSet {
+            private const MISSING_KEY_MAP = [
+                'title' => 'Please provide a title',
+                // ...
+            ];
+
+            public function createMissingValueResultForKey(string $key): Result
+            {
+                if (array_key_exists($key, self::MISSING_KEY_MAP)) {
+                    return Result::forMissingValue(self::MISSING_KEY_MAP[$key]);
+                }
+
+                return Result::forMissingValue();
+            }
+        };
+
+        $ruleSet->add($this->createDummyRule('title', required: true));
+        $result = $ruleSet->validate([]);
+
+        $this->assertFalse($result->isValid());
+        $this->assertSame('Please provide a title', $result['title']->message);
     }
 
     private function createDummyRule(string $name, mixed $default = null, bool $required = false): Rule

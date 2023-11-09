@@ -89,11 +89,13 @@ namespace Phly\RuleValidation;
 
 final class Result
 {
+    public const MISSING_MESSAGE = 'Missing required value';
+
     public static function forValidValue(mixed $value): self;
 
     public static function forInvalidValue(mixed $value, string $message): self;
 
-    public static function forMissingValue(string $message): self;
+    public static function forMissingValue(string $message = self::MISSING_MESSAGE): self;
 }
 ```
 
@@ -233,6 +235,44 @@ When validating a set of data, `RuleSet` does the following:
 - If the `Rule::key()` **does not exist** in the `$data`, but the rule is **not required**, it generates a valid `Result` using the rule's `Rule::default()` value.
 
 Results are aggregated in a `Phly\RuleValidation\ResultSet` instance, where the keys correspond to the associated `Rule::key()`.
+
+### Customizing "missing value" messages
+
+By default, when a `RuleSet` generates a result representing a missing value, it does so by calling `Result::forMissingValue()` without any arguments, which in turn uses the `Result::MISSING_MESSAGE` constant value for the `Result::$message` property.
+
+If you want to customize these messages, you have two options:
+
+- In the code where you want to display a validation error message, you can compare the message to the `Result::MISSING_MESSAGE` constant, and, when a match, display your own message:
+
+  ```php
+  if (! $result->isValid) {
+      echo $result->message === $result::MISSING_MESSAGE ? 'The value was not provided' : $result->message;
+  }
+  ```
+
+- Extend the `RuleSet` class, and override the `createMissingValueResultForKey()` method:
+
+  ```php
+  use Phly\RuleValidation\Result;
+  use Phly\RuleValidation\RuleSet;
+
+  class MyCustomRuleSet extends RuleSet
+  {
+      private const MISSING_KEY_MAP = [
+          'title' => 'Please provide a title',
+          // ...
+      ];
+
+      public function createMissingValueResultForKey(string $key): Result
+      {
+          if (array_key_exists($key, self::MISSING_KEY_MAP)) {
+              return Result::forMissingValue(self::MISSING_KEY_MAP[$key]);
+          }
+
+          return Result::forMissingValue();
+      }
+  }
+  ```
 
 ## ResultSet behavior
 

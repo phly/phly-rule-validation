@@ -21,7 +21,7 @@ class RuleSet extends AbstractCollection
         return Rule::class;
     }
 
-    public function offsetSet(mixed $offset, mixed $value): void
+    final public function offsetSet(mixed $offset, mixed $value): void
     {
         if (! $value instanceof Rule) {
             throw new InvalidArgumentException(sprintf(
@@ -37,7 +37,7 @@ class RuleSet extends AbstractCollection
         parent::offsetSet($offset, $value);
     }
 
-    public function getRuleForKey(string $key): ?Rule
+    final public function getRuleForKey(string $key): ?Rule
     {
         foreach ($this as $rule) {
             if ($rule->key() === $key) {
@@ -47,7 +47,7 @@ class RuleSet extends AbstractCollection
         return null;
     }
 
-    public function validate(array $data): ResultSet
+    final public function validate(array $data): ResultSet
     {
         $resultSet = new ResultSet();
 
@@ -59,7 +59,7 @@ class RuleSet extends AbstractCollection
             }
 
             if ($rule->required()) {
-                $resultSet[$key] = Result::forMissingValue('Missing required value for key ' . $key);
+                $resultSet[$key] = $this->createMissingValueResultForKey($key);
                 continue;
             }
 
@@ -67,6 +67,17 @@ class RuleSet extends AbstractCollection
         }
 
         return $resultSet;
+    }
+
+    /**
+     * Create a Result representing a missing value
+     *
+     * Override this method to customize the message used for individual (or all)
+     * missing values.
+     */
+    public function createMissingValueResultForKey(string $key): Result
+    {
+        return Result::forMissingValue();
     }
 
     /** @throws Exception\DuplicateRuleKeyException */

@@ -40,7 +40,7 @@ class ResultTest extends TestCase
     /** @dataProvider valueProvider */
     public function testForValidValueMarksResultValidSetsValueAndHasNullMessage(mixed $value): void
     {
-        $result = Result::forValidValue($value);
+        $result = Result::forValidValue('key', $value);
 
         $this->assertInstanceOf(Result::class, $result);
         $this->assertTrue($result->isValid);
@@ -52,7 +52,7 @@ class ResultTest extends TestCase
     public function testForInvalidValueMarksResultInvalidAndSetsValueAndMessage(mixed $value): void
     {
         $message = 'this is the message';
-        $result  = Result::forInvalidValue($value, $message);
+        $result  = Result::forInvalidValue('key', $value, $message);
 
         $this->assertInstanceOf(Result::class, $result);
         $this->assertFalse($result->isValid);
@@ -63,7 +63,7 @@ class ResultTest extends TestCase
     public function testForMissingValueMarksResultInvalidAndSetsMessage(): void
     {
         $message = 'this is the message';
-        $result  = Result::forMissingValue($message);
+        $result  = Result::forMissingValue('first', $message);
 
         $this->assertInstanceOf(Result::class, $result);
         $this->assertFalse($result->isValid);

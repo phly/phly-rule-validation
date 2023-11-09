@@ -24,9 +24,9 @@ use Phly\RuleValidation\Rule\CallbackRule;
 $rules = new RuleSet();
 $rules->add(new CallbackRule('flag', function (mixed $value, array $data): Result {
     if (! is_bool($value)) {
-        return Result::forInvalidValue($value, 'Not a boolean value');
+        return Result::forInvalidValue('flag', $value, 'Not a boolean value');
     }
-    return Result::forValidValue($value);
+    return Result::forValidValue('flag', $value);
 }, default: false));
 $rules->add(new MyCustomRule());
 // ...
@@ -42,7 +42,7 @@ if ($result->isValid()) {
 }
 
 // Get a result for a single key:
-$flagResult = $result['flag'];
+$flagResult = $result['flag']; // or $result->getResultForKey('flag')
 
 // Get the value from a single result
 $flag = $flagResult->value;
@@ -91,11 +91,11 @@ final class Result
 {
     public const MISSING_MESSAGE = 'Missing required value';
 
-    public static function forValidValue(mixed $value): self;
+    public static function forValidValue(string $key, mixed $value): self;
 
-    public static function forInvalidValue(mixed $value, string $message): self;
+    public static function forInvalidValue(string $key, mixed $value, string $message): self;
 
-    public static function forMissingValue(string $message = self::MISSING_MESSAGE): self;
+    public static function forMissingValue(string $key, string $message = self::MISSING_MESSAGE): self;
 }
 ```
 
@@ -128,13 +128,13 @@ class BooleanRule implements Rule
     public function validate(mixed $value, array $context): Result
     {
         if (! is_bool($value)) {
-            return Result::forInvalidValue($value, sprintf(
+            return Result::forInvalidValue($this->key, $value, sprintf(
                 'Expected boolean value; received %s',
                 get_debug_type($value),
             ));
         }
 
-        return Result::forValidValue($value);
+        return Result::forValidValue($this->key, $value);
     }
 
     public function default(): mixed
@@ -152,17 +152,17 @@ The class `Phly\RuleValidation\Rule\CallbackRule` allows providing a callback to
 This callback should have the following signature:
 
 ```php
-function (mixed $value, array $context): \Phly\RuleValidation\Result
+function (mixed $value, array $context, string $key): \Phly\RuleValidation\Result
 ```
 
 As an example of valid callback:
 
 ```php
-function (mixed $value, array $data): Result {
+function (mixed $value, array $data, string $key): Result {
     if (! is_bool($value)) {
-        return Result::forInvalidValue($value, 'Not a boolean value');
+        return Result::forInvalidValue($key, $value, 'Not a boolean value');
     }
-    return Result::forValidValue($value);
+    return Result::forValidValue($key, $value);
 }
 ```
 
@@ -170,7 +170,7 @@ The constructor of `CallbackRule` has the following signature:
 
 ```php
 public function __construct(
-    string $key
+    string $key,
     callable $callback,
     bool $required = true,
     mixed $default = null,
@@ -180,7 +180,7 @@ public function __construct(
 Using named arguments, you can create instances with different behavior:
 
 ```
-$callback = function (mixed $value, array $context): Result { /* ... */ };
+$callback = function (mixed $value, array $context, string $key): Result { /* ... */ };
 
 $rule1 = new CallbackRule('first', $callback, default: 'string');
 $rule2 = new CallbackRule('second', $callback, required: false);
@@ -278,7 +278,7 @@ If you want to customize these messages, you have two options:
 
 Validation of a `Phly\RuleValidation\RuleSet` produces a `Phly\Validation\ResultSet`.
 Like the `RuleSet`, `ResultSet` is a [Ramsey\\Collection\\Collection](https://github.com/ramsey/collection) extension.
-It defines three additional methods:
+It defines four additional methods:
 
 ```php
 final class ResultSet extends \Ramsey\Collection\AbstractCollection
@@ -290,16 +290,22 @@ final class ResultSet extends \Ramsey\Collection\AbstractCollection
 
     /** @return array<string, mixed> */
     public function getValues(): array;
+
+    /** @throws Phly\RuleValidation\Exception\UnknownResultException */
+    public function getResultForKey(string $key): Result;
 }
 ```
 
-Unlike `RuleSet`, `ResultSet` maps the rule key to each `Phly\RuleValidation\Result` in the collection, allowing you to retrieve results for individual keys:
+You can retrieve individual `Phly\RuleValidation\Result` instances via either the `getResultForKey()` method, or using array access:
 
 ```php
 $result = $resultSet[$key];
 ```
 
-The above is useful when generating an HTML form:
+> While you can also assign values to a `ResultSet` using array access, be aware that if the key you provide differs from the `Result::$key` value, you will receive a `Phly\RuleValidation\Exception\ResultKeyMismatchException`.
+> Generally speaking, you should never build a `ResultSet` on your own, or add to it after the fact.
+
+Array access is useful when generating an HTML form:
 
 ```php
 <input type="text" name="title" value="<?= $this->e($results['title']->value) ?>">
@@ -308,7 +314,17 @@ The above is useful when generating an HTML form:
 <?php endif ?>
 ```
 
-> The above example is using the [PlatesPHP templating engine](https://platesphp.com/).
+Alternately:
+
+```php
+<?php $title = $results->getResultForKey('title'); // or $results['title'] ?>
+<input type="text" name="title" value="<?= $this->e($title->value) ?>">
+<?php if (! $title->isValid): ?>
+<p class="form-error"><?= $this->e($title->message) ?></p>
+<?php endif ?>
+```
+
+> The above examples are using the [PlatesPHP templating engine](https://platesphp.com/).
 
 ### Result class
 
@@ -319,9 +335,10 @@ namespace Phly\RuleValidation;
 
 final readonly class Result
 {
-    public bool $isValid,
-    public mixed $value,
-    public ?string $message = null,
+    public string $key;
+    public bool $isValid;
+    public mixed $value;
+    public ?string $message = null;
 
     public static function forValidValue(mixed $value): self;
 

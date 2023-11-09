@@ -2,24 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Phly\RuleValidation\Rule;
+namespace Phly\RuleValidation;
 
-use Phly\RuleValidation\Result;
-use Phly\RuleValidation\Rule;
+use function get_debug_type;
+use function is_bool;
+use function sprintf;
 
-final class CallbackRule implements Rule
+class BooleanRule implements Rule
 {
-    /** @var callable(mixed, array, string): Result */
-    private $callback;
-
-    /** @param callable(mixed, array, string): Result $callback */
     public function __construct(
         private string $key,
-        callable $callback,
         private bool $required = true,
-        private mixed $default = null,
+        private bool $default = false,
     ) {
-        $this->callback = $callback;
     }
 
     public function required(): bool
@@ -35,7 +30,14 @@ final class CallbackRule implements Rule
     /** Validate the value */
     public function validate(mixed $value, array $context): Result
     {
-        return ($this->callback)($value, $context, $this->key);
+        if (! is_bool($value)) {
+            return Result::forInvalidValue($this->key, $value, sprintf(
+                'Expected boolean value; received %s',
+                get_debug_type($value),
+            ));
+        }
+
+        return Result::forValidValue($this->key, $value);
     }
 
     public function default(): mixed

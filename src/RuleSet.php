@@ -54,16 +54,16 @@ class RuleSet extends AbstractCollection
         foreach ($this as $rule) {
             $key = $rule->key();
             if (array_key_exists($key, $data)) {
-                $resultSet[$key] = $rule->validate($data[$key], $data);
+                $resultSet->add($rule->validate($data[$key], $data));
                 continue;
             }
 
             if ($rule->required()) {
-                $resultSet[$key] = $this->createMissingValueResultForKey($key);
+                $resultSet->add($this->createMissingValueResultForKey($key));
                 continue;
             }
 
-            $resultSet[$key] = Result::forValidValue($rule->default());
+            $resultSet->add(Result::forValidValue($key, $rule->default()));
         }
 
         return $resultSet;
@@ -77,7 +77,7 @@ class RuleSet extends AbstractCollection
      */
     public function createMissingValueResultForKey(string $key): Result
     {
-        return Result::forMissingValue();
+        return Result::forMissingValue($key);
     }
 
     /** @throws Exception\DuplicateRuleKeyException */

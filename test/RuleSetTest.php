@@ -10,6 +10,8 @@ use Phly\RuleValidation\Rule;
 use Phly\RuleValidation\RuleSet;
 use PHPUnit\Framework\TestCase;
 
+use function array_key_exists;
+
 class RuleSetTest extends TestCase
 {
     public function testRuleSetCollectsRules(): void
@@ -185,10 +187,10 @@ class RuleSetTest extends TestCase
             public function createMissingValueResultForKey(string $key): Result
             {
                 if (array_key_exists($key, self::MISSING_KEY_MAP)) {
-                    return Result::forMissingValue(self::MISSING_KEY_MAP[$key]);
+                    return Result::forMissingValue($key, self::MISSING_KEY_MAP[$key]);
                 }
 
-                return Result::forMissingValue();
+                return Result::forMissingValue($key);
             }
         };
 
@@ -221,7 +223,7 @@ class RuleSetTest extends TestCase
 
             public function validate(mixed $value, array $context): Result
             {
-                return Result::forValidValue($value);
+                return Result::forValidValue($this->name, $value);
             }
 
             public function default(): mixed

@@ -10,24 +10,25 @@ final readonly class Result
     public const MISSING_MESSAGE = 'Missing required value';
 
     private function __construct(
+        public string $key,
         public bool $isValid,
         public mixed $value,
         public ?string $message = null,
     ) {
     }
 
-    public static function forValidValue(mixed $value): self
+    public static function forValidValue(string $key, mixed $value): self
     {
-        return new self(isValid: true, value: $value);
+        return new self(key: $key, isValid: true, value: $value);
     }
 
-    public static function forInvalidValue(mixed $value, string $message): self
+    public static function forInvalidValue(string $key, mixed $value, string $message): self
     {
-        return new self(isValid: false, value: $value, message: $message);
+        return new self(key: $key, isValid: false, value: $value, message: $message);
     }
 
-    public static function forMissingValue(string $message = self::MISSING_MESSAGE): self
+    public static function forMissingValue(string $key, string $message = self::MISSING_MESSAGE): self
     {
-        return new self(isValid: false, value: null, message: $message);
+        return new self(key: $key, isValid: false, value: null, message: $message);
     }
 }

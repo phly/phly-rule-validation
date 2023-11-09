@@ -16,7 +16,7 @@ class CallbackRuleTest extends TestCase
         $key  = 'fieldKey';
         $rule = new CallbackRule(
             $key,
-            fn (mixed $value) => Result::forValidValue($value),
+            fn (mixed $value, array $data, string $key) => Result::forValidValue($key, $value),
         );
 
         $this->assertSame($key, $rule->key());
@@ -42,7 +42,7 @@ class CallbackRuleTest extends TestCase
         $default = 'string';
         $rule    = new CallbackRule(
             $key,
-            fn (mixed $value) => Result::forValidValue($value),
+            fn (mixed $value) => Result::forValidValue($key, $value),
             default: $default,
         );
 
@@ -55,7 +55,7 @@ class CallbackRuleTest extends TestCase
         $required = false;
         $rule     = new CallbackRule(
             $key,
-            fn (mixed $value) => Result::forValidValue($value),
+            fn (mixed $value) => Result::forValidValue($key, $value),
             required: $required,
         );
 
@@ -66,7 +66,7 @@ class CallbackRuleTest extends TestCase
     {
         $key         = 'fieldKey';
         $resultValue = 'string';
-        $result      = Result::forValidValue($resultValue);
+        $result      = Result::forValidValue($key, $resultValue);
         $callback    = function (mixed $value, array $context) use ($result): Result {
             return $result;
         };

@@ -17,10 +17,17 @@ final class Form
 
     public function validate(array $data): ResultSet
     {
+        $keysSeen  = [];
         $resultSet = new ResultSet();
 
         foreach ($this->rules as $rule) {
             $key = $rule->for();
+
+            if (array_key_exists($key, $keysSeen)) {
+                throw Exception\DuplicateRuleKeyException::forKey($key);
+            }
+            $keysSeen[$key] = true;
+
             if (array_key_exists($key, $data)) {
                 $resultSet[$key] = $rule->validate($data[$key], $data);
                 continue;

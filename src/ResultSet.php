@@ -4,62 +4,37 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation;
 
-use InvalidArgumentException;
-use Ramsey\Collection\AbstractCollection;
+use ArrayIterator;
+use IteratorAggregate;
+use Traversable;
 
-use function get_debug_type;
-use function is_string;
-use function sprintf;
+use function array_key_exists;
+use function array_reduce;
 
-/**
- * @extends AbstractCollection<Result>
- */
-final class ResultSet extends AbstractCollection
+/** @template-implements IteratorAggregate<Result> */
+final class ResultSet implements IteratorAggregate
 {
-    public function getType(): string
+    /** @var array<string, Result> */
+    private $results = [];
+
+    public function __construct(Result ...$results)
     {
-        return Result::class;
+        foreach ($results as $result) {
+            $this->add($result);
+        }
     }
 
-    public function add(mixed $element): bool
+    /** @return Traversable<Result> */
+    public function getIterator(): Traversable
     {
-        if (! $element instanceof Result) {
-            throw new InvalidArgumentException(sprintf(
-                'Expected %s; received %s',
-                Result::class,
-                get_debug_type($element)
-            ));
-        }
-
-        $this[$element->key] = $element;
-        return true;
+        return new ArrayIterator($this->results);
     }
 
-    public function offsetSet(mixed $offset, mixed $value): void
+    public function add(Result $result): void
     {
-        if (! $value instanceof Result) {
-            throw new InvalidArgumentException(sprintf(
-                'Expected %s; received %s',
-                Result::class,
-                get_debug_type($value)
-            ));
-        }
-
-        if (is_string($offset) && $offset !== $value->key) {
-            throw Exception\ResultKeyMismatchException::forKeys($value->key, $offset);
-        }
-
-        parent::offsetSet($offset, $value);
-    }
-
-    /** @throws Exception\UnknownResultException */
-    public function offsetGet(mixed $offset): mixed
-    {
-        if (! $this->offsetExists($offset)) {
-            throw Exception\UnknownResultException::forKey((string) $offset);
-        }
-
-        return parent::offsetGet($offset);
+        $key = $result->key;
+        $this->guardForDuplicateKey($key);
+        $this->results[$key] = $result;
     }
 
     /** @throws Exception\UnknownResultException */
@@ -76,7 +51,7 @@ final class ResultSet extends AbstractCollection
 
     public function isValid(): bool
     {
-        return $this->reduce(function (bool $isValid, Result $result): bool {
+        return array_reduce($this->results, function (bool $isValid, Result $result): bool {
             if ($isValid === false) {
                 return false;
             }
@@ -88,7 +63,7 @@ final class ResultSet extends AbstractCollection
     public function getMessages(): array
     {
         $messages = [];
-        foreach ($this as $key => $result) {
+        foreach ($this->results as $key => $result) {
             /** @var string $key */
             if ($result->isValid) {
                 continue;
@@ -102,7 +77,7 @@ final class ResultSet extends AbstractCollection
     public function getValues(): array
     {
         $values = [];
-        foreach ($this as $key => $result) {
+        foreach ($this->results as $key => $result) {
             /**
              * @var string $key
              * @psalm-suppress MixedAssignment
@@ -110,5 +85,13 @@ final class ResultSet extends AbstractCollection
             $values[$key] = $result->value;
         }
         return $values;
+    }
+
+    /** @throws Exception\DuplicateResultKeyException */
+    private function guardForDuplicateKey(string $key): void
+    {
+        if (array_key_exists($key, $this->results)) {
+            throw Exception\DuplicateResultKeyException::forKey($key);
+        }
     }
 }

@@ -4,37 +4,36 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation;
 
-use InvalidArgumentException;
-use Ramsey\Collection\AbstractCollection;
+use ArrayIterator;
+use IteratorAggregate;
+use Traversable;
 
 use function array_key_exists;
-use function get_debug_type;
-use function sprintf;
 
-/**
- * @extends AbstractCollection<Rule>
- */
-class RuleSet extends AbstractCollection
+/** @template-implements IteratorAggregate<Rule> */
+class RuleSet implements IteratorAggregate
 {
-    public function getType(): string
+    /** @var array<string, Rule> */
+    private array $rules = [];
+
+    final public function __construct(Rule ...$rules)
     {
-        return Rule::class;
+        foreach ($rules as $rule) {
+            $this->add($rule);
+        }
     }
 
-    final public function offsetSet(mixed $offset, mixed $value): void
+    /** @return Traversable<Rule> */
+    final public function getIterator(): Traversable
     {
-        if (! $value instanceof Rule) {
-            throw new InvalidArgumentException(sprintf(
-                '%s expects all values to be of type %s; received %s',
-                self::class,
-                Rule::class,
-                get_debug_type($value),
-            ));
-        }
+        return new ArrayIterator($this->rules);
+    }
 
-        $this->guardForDuplicateKey($value->key());
-
-        parent::offsetSet($offset, $value);
+    final public function add(Rule $rule): void
+    {
+        $key = $rule->key();
+        $this->guardForDuplicateKey($key);
+        $this->rules[$key] = $rule;
     }
 
     final public function getRuleForKey(string $key): ?Rule
@@ -51,7 +50,7 @@ class RuleSet extends AbstractCollection
     {
         $resultSet = new ResultSet();
 
-        foreach ($this as $rule) {
+        foreach ($this->rules as $rule) {
             $key = $rule->key();
             if (array_key_exists($key, $data)) {
                 $resultSet->add($rule->validate($data[$key], $data));
@@ -83,11 +82,8 @@ class RuleSet extends AbstractCollection
     /** @throws Exception\DuplicateRuleKeyException */
     private function guardForDuplicateKey(string $key): void
     {
-        foreach ($this as $rule) {
-            /** @var Rule $rule */
-            if ($rule->key() === $key) {
-                throw Exception\DuplicateRuleKeyException::forKey($key);
-            }
+        if (array_key_exists($key, $this->rules)) {
+            throw Exception\DuplicateRuleKeyException::forKey($key);
         }
     }
 }

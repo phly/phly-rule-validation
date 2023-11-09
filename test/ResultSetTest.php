@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PhlyTest\RuleValidation;
 
-use Phly\RuleValidation\Exception\ResultKeyMismatchException;
 use Phly\RuleValidation\Exception\UnknownResultException;
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\ResultSet;
@@ -12,12 +11,6 @@ use PHPUnit\Framework\TestCase;
 
 class ResultSetTest extends TestCase
 {
-    public function testResultSetCollectsResults(): void
-    {
-        $resultSet = new ResultSet();
-        $this->assertSame(Result::class, $resultSet->getType());
-    }
-
     public function testIsValidReturnsTrueWhenAllResultsAreValid(): void
     {
         $result1   = Result::forValidValue('first', 1);
@@ -56,12 +49,7 @@ class ResultSetTest extends TestCase
         $result2   = Result::forValidValue('second', 2);
         $result3   = Result::forInvalidValue('third', 3, 'not a valid value');
         $result4   = Result::forValidValue('fourth', 4);
-        $resultSet = new ResultSet();
-
-        $resultSet['first']  = $result1;
-        $resultSet['second'] = $result2;
-        $resultSet['third']  = $result3;
-        $resultSet['fourth'] = $result4;
+        $resultSet = new ResultSet($result1, $result2, $result3, $result4);
 
         $this->assertFalse($resultSet->isValid(), 'Expected validation to fail, but it did not');
 
@@ -75,12 +63,7 @@ class ResultSetTest extends TestCase
         $result2   = Result::forValidValue('second', 2);
         $result3   = Result::forInvalidValue('third', 3, 'not a valid value');
         $result4   = Result::forValidValue('fourth', 4);
-        $resultSet = new ResultSet();
-
-        $resultSet['first']  = $result1;
-        $resultSet['second'] = $result2;
-        $resultSet['third']  = $result3;
-        $resultSet['fourth'] = $result4;
+        $resultSet = new ResultSet($result1, $result2, $result3, $result4);
 
         $expected = [
             'first'  => 1,
@@ -90,15 +73,6 @@ class ResultSetTest extends TestCase
         ];
 
         $this->assertEquals($expected, $resultSet->getValues());
-    }
-
-    public function testRuleSetDisallowsSettingRuleUsingOffsetThatDoesNotMatchResultKey(): void
-    {
-        $result    = Result::forValidValue('first', 1);
-        $resultSet = new ResultSet();
-
-        $this->expectException(ResultKeyMismatchException::class);
-        $resultSet['second'] = $result;
     }
 
     public function testUsingAddSetsOffsetKeyToResultKey(): void
@@ -123,6 +97,6 @@ class ResultSetTest extends TestCase
         $resultSet = new ResultSet();
 
         $this->expectException(UnknownResultException::class);
-        $resultSet['first'];
+        $resultSet->getResultForKey('first');
     }
 }

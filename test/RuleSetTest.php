@@ -14,12 +14,6 @@ use function array_key_exists;
 
 class RuleSetTest extends TestCase
 {
-    public function testRuleSetCollectsRules(): void
-    {
-        $ruleSet = new RuleSet();
-        $this->assertSame(Rule::class, $ruleSet->getType());
-    }
-
     public function testCallingAddWithARuleWithANameUsedByAnotherRuleInTheRuleSetRaisesDuplicateKeyException(): void
     {
         $ruleSet = new RuleSet();
@@ -30,26 +24,6 @@ class RuleSetTest extends TestCase
         $ruleSet->add($this->createDummyRule('first'));
     }
 
-    public function testAppendingRuleWithANameUsedByAnotherRuleInTheRuleSetRaisesDuplicateKeyException(): void
-    {
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-
-        $this->expectException(DuplicateRuleKeyException::class);
-        $this->expectExceptionMessage('Duplicate validation rule detected for key "first"');
-        $ruleSet[] = $this->createDummyRule('first');
-    }
-
-    public function testAddingRuleByOffsetWithANameUsedByAnotherRuleInTheRuleSetRaisesDuplicateKeyException(): void
-    {
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-
-        $this->expectException(DuplicateRuleKeyException::class);
-        $this->expectExceptionMessage('Duplicate validation rule detected for key "first"');
-        $ruleSet['second'] = $this->createDummyRule('first');
-    }
-
     public function testInstantiatingRuleSetWithRulesForSameKeyRaisesDuplicateKeyException(): void
     {
         $rule1 = $this->createDummyRule('first');
@@ -57,7 +31,7 @@ class RuleSetTest extends TestCase
 
         $this->expectException(DuplicateRuleKeyException::class);
         $this->expectExceptionMessage('Duplicate validation rule detected for key "first"');
-        new RuleSet([$rule1, $rule2]);
+        new RuleSet(...[$rule1, $rule2]);
     }
 
     public function testGetRuleForKeyReturnsRuleMatchingKey(): void
@@ -67,7 +41,7 @@ class RuleSetTest extends TestCase
         $rule3 = $this->createDummyRule('third');
         $rule4 = $this->createDummyRule('fourth');
 
-        $ruleSet = new RuleSet([$rule2, $rule3, $rule1, $rule4]);
+        $ruleSet = new RuleSet($rule2, $rule3, $rule1, $rule4);
 
         $this->assertSame($rule1, $ruleSet->getRuleForKey('first'));
         $this->assertSame($rule2, $ruleSet->getRuleForKey('second'));
@@ -80,7 +54,7 @@ class RuleSetTest extends TestCase
         $rule1 = $this->createDummyRule('first');
         $rule2 = $this->createDummyRule('second');
 
-        $ruleSet = new RuleSet([$rule1, $rule2]);
+        $ruleSet = new RuleSet($rule1, $rule2);
 
         $this->assertNull($ruleSet->getRuleForKey('fourth'));
     }
@@ -198,7 +172,7 @@ class RuleSetTest extends TestCase
         $result = $ruleSet->validate([]);
 
         $this->assertFalse($result->isValid());
-        $this->assertSame('Please provide a title', $result['title']->message);
+        $this->assertSame('Please provide a title', $result->getResultForKey('title')->message);
     }
 
     private function createDummyRule(string $name, mixed $default = null, bool $required = false): Rule

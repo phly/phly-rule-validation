@@ -2,6 +2,23 @@
 
 This library provides a barebones validation framework.
 
+## Goals of this library
+
+The explicit goals of this library are:
+
+- Provide an idempotent way to validate individual items and/or data sets.
+- Provide an extensible framework for developing validation rules.
+- Allow handling optional data, with default values.
+- Allow reporting validation error messages.
+- Ensure missing required values are reported as validation failures.
+- Use as few dependencies as possible.
+
+Non-goals:
+
+- Creating an extensive set of validation rule classes.
+- Providing mechanisms for handling nested data sets.
+- Providing a configuration-driven mechanism for creating rule sets.
+
 ## Installation
 
 ```bash
@@ -197,18 +214,24 @@ $rule2 = new CallbackRule(key: 'second', callback: $callback, required: false);
 
 ## RuleSet behavior
 
-A `Phly\RuleValidation\RuleSet` is an extension of [Ramsey\\Collection\\Collection](https://github.com/ramsey/collection), and typed against `Phly\RuleValidation\Rule`.
+A `Phly\RuleValidation\RuleSet` is an iterable collection of `Phly\RuleValidation\Rule` instances.
 
-Internally, it validates each items provided to the collection to (a) ensure they are a `Phly\RuleValidation\Rule` instance, and (b) ensure that no rules with the same `Rule::key()` value are added to the collection.
+Internally, it validates each item provided to the collection to (a) ensure they are a `Phly\RuleValidation\Rule` instance, and (b) ensure that no rules with the same `Rule::key()` value are added to the collection.
 
-> If a rule is added to the set where `Rule::key()` matches the key of another rule already present, the `RuleSet` will raise a `Phly\RuleValidation\Exception\DuplicateKeyException`.
+> If a rule is added to the set where `Rule::key()` matches the key of another rule already present, the `RuleSet` will raise a `Phly\RuleValidation\Exception\DuplicateRuleKeyException`.
 
 Most commonly, you will add rules in the following ways:
 
-- Via the constructor:
+- Via the constructor, one rule per argument:
 
   ```php
-  $ruleSet = new RuleSet([/* ... Rule instances ... */]);
+  $ruleSet = new RuleSet(/* ... Rule instances ... */);
+  ```
+
+- Via the constructor, as an array of `Rule` instances:
+
+  ```php
+  $ruleSet = new RuleSet(...$arrayOfRuleInstances);
   ```
 
 - Using the `add()` method:
@@ -218,21 +241,31 @@ Most commonly, you will add rules in the following ways:
   $ruleSet->add($rule);
   ```
 
-- Using array append notation:
-
-  ```php
-  $ruleSet = new RuleSet();
-  $ruleSet[] = $rule;
-  ```
-
-It also adds two methods:
+It defines the following methods, which are all marked final:
 
 ```php
-/** Returns the Rule where `Rule::key()` matches the `$key`, and null if none found */
-public function getRuleForKey(string $key): ?Rule;
+namespace Phly\RuleValidation;
 
-public function validate(array $data): ResultSet;
+class RuleSet implements IteratorAggregate
+{
+    public function getIterator(): Traversable;
+
+    public function add(Rule $rule): void;
+
+    /** Returns the Rule where `Rule::key()` matches the `$key`, and null if none found */
+    public function getRuleForKey(string $key): ?Rule;
+
+    public function validate(array $data): ResultSet;
+}
 ```
+
+Additionally, it defines one method that can be overridden:
+
+```php
+public function createMissingValueResultForKey(string $key): Result
+```
+
+This method is covered below under the heading `Customizing "missing value" messages`.
 
 ### Validation behavior
 
@@ -286,16 +319,20 @@ If you want to customize these messages, you have two options:
 ## ResultSet behavior
 
 Validation of a `Phly\RuleValidation\RuleSet` produces a `Phly\Validation\ResultSet`.
-Like the `RuleSet`, `ResultSet` is a [Ramsey\\Collection\\Collection](https://github.com/ramsey/collection) extension.
-It defines four additional methods:
+Similar to the `RuleSet`, `ResultSet` is an iterable collection of `Phly\Validation\Result` instances.
+It defines the following methods:
 
 ```php
-final class ResultSet extends \Ramsey\Collection\AbstractCollection
+final class ResultSet implements IteratorAggregate
 {
+    public function getIterator(): Traversable;
+
+    public function add(Result $result): void;
+
     public function isValid(): bool;
 
-    /** @return array<string, null|string> */
-    public function getMessage(): array;
+    /** @return array<string, string> */
+    public function getMessages(): array;
 
     /** @return array<string, mixed> */
     public function getValues(): array;
@@ -305,25 +342,9 @@ final class ResultSet extends \Ramsey\Collection\AbstractCollection
 }
 ```
 
-You can retrieve individual `Phly\RuleValidation\Result` instances via either the `getResultForKey()` method, or using array access:
+You can retrieve individual `Phly\RuleValidation\Result` instances using the `getResultForKey(string $key)` method.
 
-```php
-$result = $resultSet[$key];
-```
-
-> While you can also assign values to a `ResultSet` using array access, be aware that if the key you provide differs from the `Result::$key` value, you will receive a `Phly\RuleValidation\Exception\ResultKeyMismatchException`.
-> Generally speaking, you should never build a `ResultSet` on your own, or add to it after the fact.
-
-Array access is useful when generating an HTML form:
-
-```php
-<input type="text" name="title" value="<?= $this->e($results['title']->value) ?>">
-<?php if (! $results['title']->isValid): ?>
-<p class="form-error"><?= $this->e($results['title']->message) ?></p>
-<?php endif ?>
-```
-
-Alternately:
+Access individual results when generating an HTML form:
 
 ```php
 <?php $title = $results->getResultForKey('title'); // or $results['title'] ?>
@@ -333,7 +354,7 @@ Alternately:
 <?php endif ?>
 ```
 
-> The above examples are using the [PlatesPHP templating engine](https://platesphp.com/).
+> The above example is using the [PlatesPHP templating engine](https://platesphp.com/).
 
 ### Result class
 

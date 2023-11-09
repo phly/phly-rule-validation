@@ -205,7 +205,7 @@ public function __construct(
 
 Using named arguments, you can create instances with different behavior:
 
-```
+```php
 $callback = function (mixed $value, array $context, string $key): Result { /* ... */ };
 
 $rule1 = new CallbackRule(key: 'first', callback: $callback, default: 'string');

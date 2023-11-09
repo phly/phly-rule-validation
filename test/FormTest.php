@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PhlyTest\RuleValidation;
 
-use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
 use Phly\RuleValidation\Form;
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\Rule;
@@ -101,26 +100,6 @@ class FormTest extends TestCase
 
         $this->assertTrue($result->isValid());
         $this->assertEquals($expected, $result->getValues());
-    }
-
-    public function testValidationRaisesAnExceptionIfARuleKeyIsEncounteredMoreThanOnce(): void
-    {
-        $data = [
-            'first'  => 'string',
-            'second' => 'ignored',
-            'third'  => 1,
-            'fourth' => 'also ignored',
-            'fifth'  => [1, 2, 3],
-        ];
-
-        $form = new Form();
-        $form->rules->add($this->createDummyRule('first'));
-        $form->rules->add($this->createDummyRule('third'));
-        $form->rules->add($this->createDummyRule('first'));
-
-        $this->expectException(DuplicateRuleKeyException::class);
-        $this->expectExceptionMessage('Duplicate validation rule detected for key "first"');
-        $form->validate($data);
     }
 
     private function createDummyRule(string $name, mixed $default = null, bool $required = false): Rule

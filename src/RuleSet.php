@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation;
 
+use InvalidArgumentException;
 use Ramsey\Collection\AbstractCollection;
+
+use function get_debug_type;
+use function sprintf;
 
 /**
  * @extends AbstractCollection<Rule>
@@ -16,6 +20,22 @@ class RuleSet extends AbstractCollection
         return Rule::class;
     }
 
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        if (! $value instanceof Rule) {
+            throw new InvalidArgumentException(sprintf(
+                '%s expects all values to be of type %s; received %s',
+                self::class,
+                Rule::class,
+                get_debug_type($value),
+            ));
+        }
+
+        $this->guardForDuplicateKey($value->for());
+
+        parent::offsetSet($offset, $value);
+    }
+
     public function getRuleForKey(string $key): ?Rule
     {
         foreach ($this as $rule) {
@@ -24,5 +44,16 @@ class RuleSet extends AbstractCollection
             }
         }
         return null;
+    }
+
+    /** @throws Exception\DuplicateRuleKeyException */
+    private function guardForDuplicateKey(string $key): void
+    {
+        foreach ($this as $rule) {
+            /** @var Rule $rule */
+            if ($rule->for() === $key) {
+                throw Exception\DuplicateRuleKeyException::forKey($key);
+            }
+        }
     }
 }

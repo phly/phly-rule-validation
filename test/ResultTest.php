@@ -6,6 +6,7 @@ namespace PhlyTest\RuleValidation;
 
 use Generator;
 use Phly\RuleValidation\Result;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ResultTest extends TestCase
@@ -37,7 +38,7 @@ class ResultTest extends TestCase
         ];
     }
 
-    /** @dataProvider valueProvider */
+    #[DataProvider('valueProvider')]
     public function testForValidValueMarksResultValidSetsValueAndHasNullMessage(mixed $value): void
     {
         $result = Result::forValidValue('key', $value);
@@ -48,7 +49,7 @@ class ResultTest extends TestCase
         $this->assertNull($result->message);
     }
 
-    /** @dataProvider valueProvider */
+    #[DataProvider('valueProvider')]
     public function testForInvalidValueMarksResultInvalidAndSetsValueAndMessage(mixed $value): void
     {
         $message = 'this is the message';

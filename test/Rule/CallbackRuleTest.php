@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PhlyTest\RuleValidation;
 
-use Phly\RuleValidation\CallbackRule;
 use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Rule\CallbackRule;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 

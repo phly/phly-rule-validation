@@ -17,9 +17,9 @@ Each _result_ in the result set contains the value provided, whether or not it i
 In practice:
 
 ```php
-use Phly\RuleValidation\CallbackRule;
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\RuleSet;
+use Phly\RuleValidation\Rule\CallbackRule;
 
 $rules = new RuleSet();
 $rules->add(new CallbackRule('flag', function (mixed $value, array $data): Result {
@@ -146,7 +146,7 @@ class BooleanRule implements Rule
 
 #### CallbackRule
 
-The class `Phly\RuleValidation\CallbackRule` allows providing a callback to execute during validation.
+The class `Phly\RuleValidation\Rule\CallbackRule` allows providing a callback to execute during validation.
 This callback should have the following signature:
 
 ```php

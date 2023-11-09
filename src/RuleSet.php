@@ -7,6 +7,7 @@ namespace Phly\RuleValidation;
 use InvalidArgumentException;
 use Ramsey\Collection\AbstractCollection;
 
+use function array_key_exists;
 use function get_debug_type;
 use function sprintf;
 
@@ -44,6 +45,28 @@ class RuleSet extends AbstractCollection
             }
         }
         return null;
+    }
+
+    public function validate(array $data): ResultSet
+    {
+        $resultSet = new ResultSet();
+
+        foreach ($this as $rule) {
+            $key = $rule->key();
+            if (array_key_exists($key, $data)) {
+                $resultSet[$key] = $rule->validate($data[$key], $data);
+                continue;
+            }
+
+            if ($rule->required()) {
+                $resultSet[$key] = Result::forMissingValue('Missing required value for key ' . $key);
+                continue;
+            }
+
+            $resultSet[$key] = Result::forValidValue($rule->default());
+        }
+
+        return $resultSet;
     }
 
     /** @throws Exception\DuplicateRuleKeyException */

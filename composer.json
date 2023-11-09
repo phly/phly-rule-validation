@@ -2,7 +2,7 @@
     "name": "phly/phly-rule-validation",
     "description": "Simple rule-based validation framework",
     "type": "library",
-    "license": "BSD-3-Clause",
+    "license": "BSD-2-Clause",
     "keywords": [
         "validation"
     ],

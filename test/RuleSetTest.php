@@ -96,7 +96,7 @@ class RuleSetTest extends TestCase
                 return false;
             }
 
-            public function for(): string
+            public function key(): string
             {
                 return $this->name;
             }

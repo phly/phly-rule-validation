@@ -24,7 +24,7 @@ final class CallbackRule implements Rule
         return $this->required;
     }
 
-    public function for(): string
+    public function key(): string
     {
         return $this->key;
     }

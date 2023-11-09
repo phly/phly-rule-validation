@@ -31,7 +31,7 @@ class RuleSet extends AbstractCollection
             ));
         }
 
-        $this->guardForDuplicateKey($value->for());
+        $this->guardForDuplicateKey($value->key());
 
         parent::offsetSet($offset, $value);
     }
@@ -39,7 +39,7 @@ class RuleSet extends AbstractCollection
     public function getRuleForKey(string $key): ?Rule
     {
         foreach ($this as $rule) {
-            if ($rule->for() === $key) {
+            if ($rule->key() === $key) {
                 return $rule;
             }
         }
@@ -51,7 +51,7 @@ class RuleSet extends AbstractCollection
     {
         foreach ($this as $rule) {
             /** @var Rule $rule */
-            if ($rule->for() === $key) {
+            if ($rule->key() === $key) {
                 throw Exception\DuplicateRuleKeyException::forKey($key);
             }
         }

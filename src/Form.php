@@ -20,7 +20,7 @@ final class Form
         $resultSet = new ResultSet();
 
         foreach ($this->rules as $rule) {
-            $key = $rule->for();
+            $key = $rule->key();
             if (array_key_exists($key, $data)) {
                 $resultSet[$key] = $rule->validate($data[$key], $data);
                 continue;

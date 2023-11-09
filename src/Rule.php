@@ -9,7 +9,7 @@ interface Rule
     public function required(): bool;
 
     /** Return the key the Rule applies to */
-    public function for(): string;
+    public function key(): string;
 
     /** Validate the value */
     public function validate(mixed $value, array $context): Result;

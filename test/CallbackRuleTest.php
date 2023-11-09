@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class CallbackRuleTest extends TestCase
 {
-    public function testCallbackRuleUsesProvidedKeyAsReturnValueFor(): CallbackRule
+    public function testCallbackRuleUsesProvidedKey(): CallbackRule
     {
         $key  = 'fieldKey';
         $rule = new CallbackRule(
@@ -19,18 +19,18 @@ class CallbackRuleTest extends TestCase
             fn (mixed $value) => Result::forValidValue($value),
         );
 
-        $this->assertSame($key, $rule->for());
+        $this->assertSame($key, $rule->key());
 
         return $rule;
     }
 
-    #[Depends('testCallbackRuleUsesProvidedKeyAsReturnValueFor')]
+    #[Depends('testCallbackRuleUsesProvidedKey')]
     public function testCallbackRuleIsRequiredByDefaultIfNoRequiredFlagProvided(CallbackRule $rule): void
     {
         $this->assertTrue($rule->required());
     }
 
-    #[Depends('testCallbackRuleUsesProvidedKeyAsReturnValueFor')]
+    #[Depends('testCallbackRuleUsesProvidedKey')]
     public function testCallbackRuleHasNullDefaultIfNoDefaultProvided(CallbackRule $rule): void
     {
         $this->assertNull($rule->default());

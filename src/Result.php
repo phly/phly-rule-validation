@@ -1,15 +1,16 @@
-<?php
+<?php // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols,SlevomatCodingStandard.TypeHints.DeclareStrictTypes.IncorrectWhitespaceBeforeDeclare
 
 declare(strict_types=1);
 
 namespace Phly\RuleValidation;
 
-final class Result
+// @todo Remove file-level phpcs:disable once PSR1 ruleset understands readonly classes
+final readonly class Result
 {
     private function __construct(
-        public readonly bool $isValid,
-        public readonly mixed $value,
-        public readonly ?string $message = null,
+        public bool $isValid,
+        public mixed $value,
+        public ?string $message = null,
     ) {
     }
 

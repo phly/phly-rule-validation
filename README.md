@@ -1,5 +1,7 @@
 # phly/phly-rule-validation
 
+[![Build Status](https://github.com/phly/phly-rule-validation/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/phly/phly-rule-validation/actions/workflows/continuous-integration.yml)
+
 This library provides a barebones validation framework.
 
 ## Goals of this library

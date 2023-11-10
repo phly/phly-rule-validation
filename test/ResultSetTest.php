@@ -109,4 +109,18 @@ class ResultSetTest extends TestCase
         $this->expectException(ResultSetFrozenException::class);
         $resultSet->add(Result::forValidValue('flag', true));
     }
+
+    public function testAllowsAccessOfIndividualResultsViaPropertyAccessViaKey(): void
+    {
+        $result1   = Result::forValidValue('first', 1);
+        $result2   = Result::forValidValue('second', 2);
+        $result3   = Result::forInvalidValue('third', 3, 'not a valid value');
+        $result4   = Result::forValidValue('fourth', 4);
+        $resultSet = new ResultSet($result1, $result2, $result3, $result4);
+
+        $this->assertSame($result1, $resultSet->first);
+        $this->assertSame($result2, $resultSet->second);
+        $this->assertSame($result3, $resultSet->third);
+        $this->assertSame($result4, $resultSet->fourth);
+    }
 }

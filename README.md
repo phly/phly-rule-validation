@@ -328,6 +328,9 @@ It defines the following methods:
 ```php
 final class ResultSet implements IteratorAggregate
 {
+    /** Returns the Result associated with $key, allowing property access to individual results */
+    public function __get(string $key): ?Result;
+
     public function getIterator(): Traversable;
 
     public function add(Result $result): void;
@@ -352,14 +355,19 @@ final class ResultSet implements IteratorAggregate
 }
 ```
 
-You can retrieve individual `Phly\RuleValidation\Result` instances using the `getResultForKey(string $key)` method.
-
 > Internally, `RuleSet` calls `freeze()` on a `ResultSet` before returning it from `RuleSet::validate()`.
+
+You can retrieve individual `Phly\RuleValidation\Result` instances using the `getResultForKey(string $key)` method, or via property access, using the key:
+
+```php
+$result = $results->getResultForKey('flag');
+$result = $results->flag;
+```
 
 Access individual results when generating an HTML form:
 
 ```php
-<?php $title = $results->getResultForKey('title'); // or $results['title'] ?>
+<?php $title = $results->title; // or $results->getResultForKey('title') ?>
 <input type="text" name="title" value="<?= $this->e($title->value) ?>">
 <?php if (! $title->isValid): ?>
 <p class="form-error"><?= $this->e($title->message) ?></p>

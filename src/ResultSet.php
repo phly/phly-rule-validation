@@ -26,6 +26,11 @@ final class ResultSet implements IteratorAggregate
         }
     }
 
+    public function __get(string $key): ?Result
+    {
+        return array_key_exists($key, $this->results) ? $this->results[$key] : null;
+    }
+
     /** @return Traversable<Result> */
     public function getIterator(): Traversable
     {

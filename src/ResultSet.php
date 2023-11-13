@@ -11,38 +11,59 @@ use Traversable;
 use function array_key_exists;
 use function array_reduce;
 
-/** @template-implements IteratorAggregate<Result> */
-final class ResultSet implements IteratorAggregate
+/**
+ * Validation result set
+ *
+ * The main reason to extend this class is to provide a list of expected Result
+ * mappings, with the expected Result value types:
+ *
+ * <code>
+ * /**
+ *  * @property-read Result<string> $title
+ *  * @property-read Result<string> $description
+ *  * @property-read Result<DateTimeImmutable> $creationDate
+ *  * /
+ * class CustomResultSet extends ResultSet
+ * {
+ * }
+ * </code>
+ *
+ * Doing so will give you IDE type hints, as well as allow Psalm and/or PHPStan
+ * to infer about composed Result instances correctly.
+ *
+ * @template-implements IteratorAggregate<Result>
+ */
+class ResultSet implements IteratorAggregate
 {
     private bool $frozen = false;
 
     /** @var array<string, Result> */
     private $results = [];
 
-    public function __construct(Result ...$results)
+    final public function __construct(Result ...$results)
     {
         foreach ($results as $result) {
             $this->add($result);
         }
     }
 
-    public function __isset(string $name): bool
+    final public function __isset(string $name): bool
     {
         return array_key_exists($name, $this->results);
     }
 
-    public function __get(string $key): ?Result
+    final public function __get(string $key): ?Result
     {
         return array_key_exists($key, $this->results) ? $this->results[$key] : null;
     }
 
     /** @return Traversable<Result> */
-    public function getIterator(): Traversable
+    final public function getIterator(): Traversable
     {
         return new ArrayIterator($this->results);
     }
 
-    public function add(Result $result): void
+    final public function add(Result $result): void
     {
         if ($this->frozen) {
             throw new Exception\ResultSetFrozenException();
@@ -54,7 +75,7 @@ final class ResultSet implements IteratorAggregate
     }
 
     /** @throws Exception\UnknownResultException */
-    public function getResultForKey(string $key): Result
+    final public function getResultForKey(string $key): Result
     {
         foreach ($this as $result) {
             if ($result->key === $key) {
@@ -65,7 +86,7 @@ final class ResultSet implements IteratorAggregate
         throw Exception\UnknownResultException::forKey($key);
     }
 
-    public function isValid(): bool
+    final public function isValid(): bool
     {
         return array_reduce($this->results, function (bool $isValid, Result $result): bool {
             if ($isValid === false) {
@@ -76,7 +97,7 @@ final class ResultSet implements IteratorAggregate
     }
 
     /** @return array<array-key, null|string> */
-    public function getMessages(): array
+    final public function getMessages(): array
     {
         $messages = [];
         foreach ($this->results as $key => $result) {
@@ -90,7 +111,7 @@ final class ResultSet implements IteratorAggregate
     }
 
     /** @return array<string, mixed> */
-    public function getValues(): array
+    final public function getValues(): array
     {
         $values = [];
         foreach ($this->results as $key => $result) {
@@ -108,7 +129,7 @@ final class ResultSet implements IteratorAggregate
      *
      * Once called, no more results may be added to the result set.
      */
-    public function freeze(): void
+    final public function freeze(): void
     {
         $this->frozen = true;
     }

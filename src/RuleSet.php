@@ -80,13 +80,29 @@ class RuleSet implements IteratorAggregate
         return $resultSet;
     }
 
-    final public function createValidResultSet(array $valueMap): ResultSet
-    {
-        $resultSet = new ResultSet();
+    /**
+     * @param array<non-empty-string, mixed> $valueMap
+     * @param class-string<ResultSet> $resultSetClass
+     */
+    final public function createValidResultSet(
+        array $valueMap = [],
+        string $resultSetClass = ResultSet::class
+    ): ResultSet {
+        $resultSet = new $resultSetClass();
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
-            $resultSet->add(Result::forValidValue($key, array_key_exists($key, $valueMap) ? $valueMap[$key] : $rule->default()));
+            /** @var non-empty-string $key */
+            if (array_key_exists($key, $valueMap)) {
+                $resultSet->add(Result::forValidValue($key, $valueMap[$key]));
+                continue;
+            }
+
+            if ($rule->required() && null === $rule->default()) {
+                throw Exception\RequiredRuleWithNoDefaultValueException::forKey($key, ResultSet::class);
+            }
+
+            $resultSet->add(Result::forValidValue($key, $rule->default()));
         }
 
         return $resultSet;

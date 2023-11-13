@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhlyTest\RuleValidation;
 
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
+use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
 use Phly\RuleValidation\Exception\ResultSetFrozenException;
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\ResultSet;
@@ -230,7 +231,6 @@ class RuleSetTest extends TestCase
         $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
 
         $this->assertInstanceOf(ResultSet::class, $form);
-
         $this->assertTrue(isset($form->first));
         $this->assertSame('initial value', $form->first->value);
         $this->assertTrue(isset($form->second));
@@ -243,16 +243,55 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetOmitsResultsForKeysNotMatchingAnyRules(): void
     {
-        $this->markTestIncomplete();
+        $ruleSet = new RuleSet();
+        $ruleSet->add($this->createDummyRule('first'));
+
+        $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
+
+        $this->assertInstanceOf(ResultSet::class, $form);
+        $this->assertTrue(isset($form->first));
+        $this->assertSame('initial value', $form->first->value);
+        $this->assertFalse(isset($form->fourth));
     }
 
-    public function testCreateValidResultSetUsesNullForRulesWithNoDefaultValueAndNoValueInValueMap(): void
+    public function testCreateValidResultSetUsesNullForOptionalRulesWithNoDefaultValueAndNoValueInValueMap(): void
     {
-        $this->markTestIncomplete();
+        $ruleSet = new RuleSet();
+        $ruleSet->add($this->createDummyRule('first'));
+
+        $form = $ruleSet->createValidResultSet();
+
+        $this->assertInstanceOf(ResultSet::class, $form);
+        $this->assertTrue(isset($form->first));
+        $this->assertNull($form->first->value);
+    }
+
+    public function testCreateValidResultSetRaisesExceptionForRequiredRulesWithNoDefaultAndNoValueInValueMap(): void
+    {
+        $ruleSet = new RuleSet();
+        $ruleSet->add($this->createDummyRule('first', required: true));
+
+        $this->expectException(RequiredRuleWithNoDefaultValueException::class);
+        $ruleSet->createValidResultSet();
     }
 
     public function testCreateValidResultSetUsesProvidedResultSetClassNameWhenPresent(): void
     {
-        $this->markTestIncomplete();
+        $ruleSet = new RuleSet();
+        $ruleSet->add($this->createDummyRule('first'));
+        $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
+        $ruleSet->add($this->createDummyRule('third', default: 1));
+        $ruleSet->add($this->createDummyRule('fourth', required: true));
+
+        $form = $ruleSet->createValidResultSet(
+            valueMap: ['first' => 'initial value', 'fourth' => 42],
+            resultSetClass: TestAsset\CustomResultSet::class,
+        );
+
+        $this->assertInstanceOf(TestAsset\CustomResultSet::class, $form);
+        $this->assertSame('initial value', $form->first->value);
+        $this->assertSame('string', $form->second->value);
+        $this->assertSame(1, $form->third->value);
+        $this->assertSame(42, $form->fourth->value);
     }
 }

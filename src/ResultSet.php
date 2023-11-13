@@ -26,6 +26,11 @@ final class ResultSet implements IteratorAggregate
         }
     }
 
+    public function __isset(string $name): bool
+    {
+        return array_key_exists($name, $this->results);
+    }
+
     public function __get(string $key): ?Result
     {
         return array_key_exists($key, $this->results) ? $this->results[$key] : null;

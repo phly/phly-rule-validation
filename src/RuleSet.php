@@ -16,6 +16,17 @@ class RuleSet implements IteratorAggregate
     /** @var array<string, Rule> */
     private array $rules = [];
 
+    /**
+     * Create a Result representing a missing value
+     *
+     * Override this method to customize the message used for individual (or all)
+     * missing values.
+     */
+    public function createMissingValueResultForKey(string $key): Result
+    {
+        return Result::forMissingValue($key);
+    }
+
     final public function __construct(Rule ...$rules)
     {
         foreach ($rules as $rule) {
@@ -69,15 +80,16 @@ class RuleSet implements IteratorAggregate
         return $resultSet;
     }
 
-    /**
-     * Create a Result representing a missing value
-     *
-     * Override this method to customize the message used for individual (or all)
-     * missing values.
-     */
-    public function createMissingValueResultForKey(string $key): Result
+    final public function createValidResultSet(array $valueMap): ResultSet
     {
-        return Result::forMissingValue($key);
+        $resultSet = new ResultSet();
+
+        foreach ($this->rules as $rule) {
+            $key = $rule->key();
+            $resultSet->add(Result::forValidValue($key, array_key_exists($key, $valueMap) ? $valueMap[$key] : $rule->default()));
+        }
+
+        return $resultSet;
     }
 
     /** @throws Exception\DuplicateRuleKeyException */

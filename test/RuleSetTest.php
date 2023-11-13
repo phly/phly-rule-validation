@@ -218,4 +218,41 @@ class RuleSetTest extends TestCase
             }
         };
     }
+
+    public function testCreateValidResultSetCreatesValidResultSetUsingMap(): void
+    {
+        $ruleSet = new RuleSet();
+        $ruleSet->add($this->createDummyRule('first'));
+        $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
+        $ruleSet->add($this->createDummyRule('third', default: 1));
+        $ruleSet->add($this->createDummyRule('fourth', required: true));
+
+        $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
+
+        $this->assertInstanceOf(ResultSet::class, $form);
+
+        $this->assertTrue(isset($form->first));
+        $this->assertSame('initial value', $form->first->value);
+        $this->assertTrue(isset($form->second));
+        $this->assertSame('string', $form->second->value);
+        $this->assertTrue(isset($form->third));
+        $this->assertSame(1, $form->third->value);
+        $this->assertTrue(isset($form->fourth));
+        $this->assertSame(42, $form->fourth->value);
+    }
+
+    public function testCreateValidResultSetOmitsResultsForKeysNotMatchingAnyRules(): void
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testCreateValidResultSetUsesNullForRulesWithNoDefaultValueAndNoValueInValueMap(): void
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testCreateValidResultSetUsesProvidedResultSetClassNameWhenPresent(): void
+    {
+        $this->markTestIncomplete();
+    }
 }

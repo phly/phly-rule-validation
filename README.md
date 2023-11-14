@@ -399,3 +399,76 @@ final readonly class Result
 ```
 
 Your `Rule` classes will produce `Result` instances using one of the named constructors (`forValidValue()`, `forInvalidValue()`), and your code can then access the state using the public properties (`$isValid`, `$value`, `$message`).
+
+## Providing types
+
+`Result::$value` provides a `mixed` hint, and a `ResultSet` is defined as composing arbitrary `Result` instances.
+This makes reasoning about what type of value is expected from results, and what results a result set composes, next to impossible.
+
+To provide a bit more safety, this library defines a number of template annotations.
+
+### Result
+
+The `Result` class allows templating the type of the `$value` it composes:
+
+```php
+/** @var Result<int> $count */
+$count = $resultSet->count;
+```
+
+### ResultSet
+
+The `ResultSet` class can be extended.
+When you do so, you may define property annotations for the class to define accessible `Result` instances:
+
+```php
+/**
+ * @property-read Result<string> $title
+ * @property-read Result<string> $description
+ * @property-read Result<DateTimeImmutable> $creationDate
+ */
+class CustomResultSet extends ResultSet
+{
+}
+```
+
+This will allow you to annotate instances:
+
+```php
+/** @var CustomResultSet $result */
+$result = $ruleSet->validate($data);
+```
+
+It also gives you a value you can use with rule sets...
+
+### RuleSet
+
+The `RuleSet` class defines `@template T of ResultSet`.
+This gives you a couple possibilities.
+
+For instance, when using the `RuleSet::createWithResultSetClass()` constructor, you could do the following:
+
+```php
+/** @var RuleSet<CustomResultSet> $ruleSet */
+$ruleSet = RuleSet::createWithResultSetClass(CustomResultSet::class);
+```
+
+Alternately, you could extend the class:
+
+```php
+/**
+ * @template-extends RuleSet<CustomResultSet>
+ */
+class MyRuleSet extends RuleSet
+{
+    protected string $resultSetClass = CustomResultSet::class;
+}
+```
+
+If you are creating an anonymous class extending `RuleSet`, use the `@template-extends` annotation:
+
+```php
+$ruleSet = new /** @template-extends RuleSet<CustomResultSet> */ class extends RuleSet {
+    // ...
+};
+```

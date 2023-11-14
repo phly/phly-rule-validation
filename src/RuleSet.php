@@ -16,11 +16,11 @@ use function array_key_exists;
  */
 class RuleSet implements IteratorAggregate
 {
+    /** @var class-string<T> */
+    protected string $resultSetClass = ResultSet::class;
+
     /** @var array<string, Rule> */
     private array $rules = [];
-
-    /** @var class-string<T> */
-    private string $resultSetClass = ResultSet::class;
 
     /**
      * Create a Result representing a missing value

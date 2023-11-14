@@ -395,7 +395,7 @@ public static function createWithResultSetClass(string $resultSetClass, Rule ...
 ```
 
 > When using this method, we recommend adding an annotation for your rule set variable to denote the result class used:
-> 
+>
 > ```php
 > /** @var RuleSet<MyCustomResultSet> $ruleSet */
 > $ruleSet = RuleSet::createWithResultSetClass(MyCustomResultSet::class);

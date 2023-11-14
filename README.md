@@ -253,19 +253,19 @@ use Traversable;
 
 class RuleSet implements IteratorAggregate
 {
-    final public static function createWithResultSetClass(string $resultSetClass, Rule ...$rules): self;
+    public static function createWithResultSetClass(string $resultSetClass, Rule ...$rules): self;
 
-    final public function getIterator(): Traversable;
+    public function getIterator(): Traversable;
 
-    final public function add(Rule $rule): void;
+    public function add(Rule $rule): void;
 
     /** Returns the Rule where `Rule::key()` matches the `$key`, and null if none found */
-    final public function getRuleForKey(string $key): ?Rule;
+    public function getRuleForKey(string $key): ?Rule;
 
-    final public function validate(array $data): ResultSet;
+    public function validate(array $data): ResultSet;
 
     /** Use this method to create an initial result set for a form */
-    final public function createValidResultSet(array $valueMap = []): ResultSet;
+    public function createValidResultSet(array $valueMap = []): ResultSet;
 }
 ```
 
@@ -276,6 +276,13 @@ public function createMissingValueResultForKey(string $key): Result
 ```
 
 This method is covered below under the heading `Customizing "missing value" messages`.
+
+The class also defines one `protected` property for defining an alternate `ResultSet` implementation to create when validating:
+
+```php
+/** @var class-string<ResultSet> */
+protected string $resultSetClass = ResultSet::class;
+```
 
 ### Validation behavior
 

@@ -20,6 +20,7 @@ Non-goals:
 - Creating an extensive set of validation rule classes.
 - Providing mechanisms for handling nested data sets.
 - Providing a configuration-driven mechanism for creating rule sets.
+- Providing HTML form input representations or all metadata required to create HTML form input representations.
 
 ## Installation
 
@@ -248,16 +249,23 @@ It defines the following methods, which are all marked final:
 ```php
 namespace Phly\RuleValidation;
 
+use Traversable;
+
 class RuleSet implements IteratorAggregate
 {
-    public function getIterator(): Traversable;
+    final public static function createWithResultSetClass(string $resultSetClass, Rule ...$rules): self;
 
-    public function add(Rule $rule): void;
+    final public function getIterator(): Traversable;
+
+    final public function add(Rule $rule): void;
 
     /** Returns the Rule where `Rule::key()` matches the `$key`, and null if none found */
-    public function getRuleForKey(string $key): ?Rule;
+    final public function getRuleForKey(string $key): ?Rule;
 
-    public function validate(array $data): ResultSet;
+    final public function validate(array $data): ResultSet;
+
+    /** Use this method to create an initial result set for a form */
+    final public function createValidResultSet(array $valueMap = []): ResultSet;
 }
 ```
 
@@ -319,6 +327,73 @@ If you want to customize these messages, you have two options:
   }
   ```
 
+### Creating an initial result set
+
+When preparing an HTML form, it is not uncommon to create one version of the form to handle both the initial form state, as well as to handle cases where form validation fails.
+Doing so can result in a lot of logic to determine if values already exist and are valid:
+
+```php
+<input name="title" type="text" value="<?= isset($form) ? $this->e($form>title->value) : '' ?>">
+<?php if (isset($form) && ! $form>title->isValid): ?>
+<p class="text-error"><?= $form>title->message ?></p>
+<?php endif ?>
+```
+
+This gets even more complicated if the form represents an update of an existing data set:
+
+```php
+<input name="title" type="text" value="<?= isset($form) ? $this->e($form>title->value) : $post->title ?>">
+<?php if (isset($form) && ! $form>title->isValid): ?>
+<p class="text-error"><?= $form>title->message ?></p>
+<?php endif ?>
+```
+
+The above poses a risk in the scenario that `$post` has not been provided to the template.
+
+To make creating these forms easier, `RuleSet` provides the method `createValidResultSet(array $valueMap = []): ResultSet`.
+The method returns a `ResultSet` where `isValid()` returns `true`, and each composed `Result` has a `true` `$isValid` property.
+
+This method takes an optional associative array with values to use to seed the `Result` values associated with the provided key.
+Any keys in that value map that do not have an associated rule are ignored.
+If the value map does not contain a key for a composed `Rule`, then the following will happen:
+
+- If the value is _required_ but has no associated default value, a `Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException` is raised.
+- If the value is optional, and has no associated default value, `null` is used.
+- If a default value exists, that value is used.
+
+The values in the `$valueMap` always take precedence over default values.
+
+This approach means that you can always pass a populated `ResultSet` to the template, reducing the boilerplate for checking for forms and their values.
+
+As an example:
+
+```php
+$form = $ruleSet->createValidResultSet(['title' => $post->title]);
+
+// In an HTML form:
+<input name="title" type="text" value="<?= $this->e($form>title->value) ?>">
+<?php if (! $form>title->isValid): ?>
+<p class="text-error"><?= $form>title->message ?></p>
+<?php endif ?>
+```
+
+### Using a custom `ResultSet`
+
+By default, `RuleSet::validate()` will return an instance of `ResultSet` (see next section).
+If you wish to provide an alternate `ResultSet`, you can use the `RuleSet::createWithResultSetClass()` constructor:
+
+```php
+/** @param class-string<ResultSet> $resultSetClass */
+public static function createWithResultSetClass(string $resultSetClass, Rule ...$rules): self
+```
+
+> When using this method, we recommend adding an annotation for your rule set variable to denote the result class used:
+> 
+> ```php
+> /** @var RuleSet<MyCustomResultSet> $ruleSet */
+> $ruleSet = RuleSet::createWithResultSetClass(MyCustomResultSet::class);
+> ```
+
 ## ResultSet behavior
 
 Validation of a `Phly\RuleValidation\RuleSet` produces a `Phly\Validation\ResultSet`.
@@ -326,32 +401,32 @@ Similar to the `RuleSet`, `ResultSet` is an iterable collection of `Phly\Validat
 It defines the following methods:
 
 ```php
-final class ResultSet implements IteratorAggregate
+class ResultSet implements IteratorAggregate
 {
     /** Returns the Result associated with $key, allowing property access to individual results */
-    public function __get(string $key): ?Result;
+    final public function __get(string $key): ?Result;
 
-    public function getIterator(): Traversable;
+    final public function getIterator(): Traversable;
 
-    public function add(Result $result): void;
+    final public function add(Result $result): void;
 
-    public function isValid(): bool;
+    final public function isValid(): bool;
 
     /** @return array<string, string> */
-    public function getMessages(): array;
+    final public function getMessages(): array;
 
     /** @return array<string, mixed> */
-    public function getValues(): array;
+    final public function getValues(): array;
 
     /** @throws Phly\RuleValidation\Exception\UnknownResultException */
-    public function getResultForKey(string $key): Result;
+    final public function getResultForKey(string $key): Result;
 
     /**
      * Freeze the result set
      *
      * Once called, no more results may be added to the result set.
      */
-    public function freeze(): void
+    final public function freeze(): void
 }
 ```
 

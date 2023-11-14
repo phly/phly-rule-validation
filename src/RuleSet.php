@@ -10,11 +10,17 @@ use Traversable;
 
 use function array_key_exists;
 
-/** @template-implements IteratorAggregate<Rule> */
+/**
+ * @template T of ResultSet
+ * @template-implements IteratorAggregate<Rule>
+ */
 class RuleSet implements IteratorAggregate
 {
     /** @var array<string, Rule> */
     private array $rules = [];
+
+    /** @var class-string<T> */
+    private string $resultSetClass = ResultSet::class;
 
     /**
      * Create a Result representing a missing value
@@ -25,6 +31,18 @@ class RuleSet implements IteratorAggregate
     public function createMissingValueResultForKey(string $key): Result
     {
         return Result::forMissingValue($key);
+    }
+
+    /**
+     * @param class-string<ResultSet> $resultSetClass
+     * @return RuleSet
+     */
+    final public static function createWithResultSetClass(string $resultSetClass, Rule ...$rules): self
+    {
+        $ruleSet                 = new static(...$rules);
+        $ruleSet->resultSetClass = $resultSetClass;
+
+        return $ruleSet;
     }
 
     final public function __construct(Rule ...$rules)
@@ -57,9 +75,13 @@ class RuleSet implements IteratorAggregate
         return null;
     }
 
+    /**
+     * @param array<non-empty-string, mixed> $data
+     * @return T
+     */
     final public function validate(array $data): ResultSet
     {
-        $resultSet = new ResultSet();
+        $resultSet = new ($this->resultSetClass)();
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
@@ -82,17 +104,15 @@ class RuleSet implements IteratorAggregate
 
     /**
      * @param array<non-empty-string, mixed> $valueMap
-     * @param class-string<ResultSet> $resultSetClass
+     * @return T
      */
-    final public function createValidResultSet(
-        array $valueMap = [],
-        string $resultSetClass = ResultSet::class
-    ): ResultSet {
-        $resultSet = new $resultSetClass();
+    final public function createValidResultSet(array $valueMap = []): ResultSet
+    {
+        $resultSet = new ($this->resultSetClass)();
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
-            /** @var non-empty-string $key */
+            /** @psalm-var non-empty-string $key */
             if (array_key_exists($key, $valueMap)) {
                 $resultSet->add(Result::forValidValue($key, $valueMap[$key]));
                 continue;

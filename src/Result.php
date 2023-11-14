@@ -22,6 +22,9 @@ final readonly class Result
     ) {
     }
 
+    /**
+     * @return Result<T>
+     */
     public static function forValidValue(string $key, mixed $value): self
     {
         return new self(key: $key, isValid: true, value: $value);

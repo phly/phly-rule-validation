@@ -165,7 +165,7 @@ class RuleSetTest extends TestCase
 
     public function testValidationAllowsOverridingMissingValueMessageViaExtension(): void
     {
-        $ruleSet = new class extends RuleSet {
+        $ruleSet = new /** @template-extends RuleSet<ResultSet> */ class extends RuleSet {
             private const MISSING_KEY_MAP = [
                 'title' => 'Please provide a title',
                 // ...
@@ -277,21 +277,33 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetUsesProvidedResultSetClassNameWhenPresent(): void
     {
-        $ruleSet = new RuleSet();
+        /** @var RuleSet<TestAsset\CustomResultSet> $ruleSet */
+        $ruleSet = RuleSet::createWithResultSetClass(TestAsset\CustomResultSet::class);
         $ruleSet->add($this->createDummyRule('first'));
         $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
         $ruleSet->add($this->createDummyRule('third', default: 1));
         $ruleSet->add($this->createDummyRule('fourth', required: true));
 
-        $form = $ruleSet->createValidResultSet(
-            valueMap: ['first' => 'initial value', 'fourth' => 42],
-            resultSetClass: TestAsset\CustomResultSet::class,
-        );
+        $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
 
         $this->assertInstanceOf(TestAsset\CustomResultSet::class, $form);
         $this->assertSame('initial value', $form->first->value);
         $this->assertSame('string', $form->second->value);
         $this->assertSame(1, $form->third->value);
         $this->assertSame(42, $form->fourth->value);
+    }
+
+    public function testValidateAllowsProvidingAlternateResultClassName(): void
+    {
+        /** @var RuleSet<TestAsset\CustomResultSet> $ruleSet */
+        $ruleSet = RuleSet::createWithResultSetClass(TestAsset\CustomResultSet::class);
+        $ruleSet->add($this->createDummyRule('first'));
+        $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
+        $ruleSet->add($this->createDummyRule('third', default: 1));
+        $ruleSet->add($this->createDummyRule('fourth', required: true));
+
+        $result = $ruleSet->validate(['some' => 'data']);
+
+        $this->assertInstanceOf(TestAsset\CustomResultSet::class, $result);
     }
 }

@@ -62,19 +62,19 @@ if ($result->isValid()) {
 }
 
 // Get a result for a single key:
-$flagResult = $result['flag']; // or $result->getResultForKey('flag')
+$flagResult = $result->flag; // or $result->getResultForKey('flag')
 
 // Get the value from a single result
-$flag = $flagResult->value;
+$flag = $flagResult->value();
 
 // Get the validation status from a single result
-if ($flagResult->isValid) {
+if ($flagResult->isValid()) {
     // ...
 }
 
 // Get an error message for a single result
-if (! $flagResult->isValid) {
-    echo $flagResult->message;
+if (! $flagResult->isValid()) {
+    echo $flagResult->message();
 }
 ```
 
@@ -94,7 +94,7 @@ interface Rule
     public function key(): string;
 
     /** Validate the value */
-    public function validate(mixed $value, array $context): Result;
+    public function validate(mixed $value, array $context): ValidationResult;
 
     /** Default value to use when not required and no value provided */
     public function default(): mixed;
@@ -272,7 +272,7 @@ class RuleSet implements IteratorAggregate
 Additionally, it defines one method that can be overridden:
 
 ```php
-public function createMissingValueResultForKey(string $key): Result
+public function createMissingValueResultForKey(string $key): ValidationResult
 ```
 
 This method is covered below under the heading `Customizing "missing value" messages`.
@@ -340,18 +340,18 @@ When preparing an HTML form, it is not uncommon to create one version of the for
 Doing so can result in a lot of logic to determine if values already exist and are valid:
 
 ```php
-<input name="title" type="text" value="<?= isset($form) ? $this->e($form>title->value) : '' ?>">
-<?php if (isset($form) && ! $form>title->isValid): ?>
-<p class="text-error"><?= $form>title->message ?></p>
+<input name="title" type="text" value="<?= isset($form) ? $this->e($form>title->value()) : '' ?>">
+<?php if (isset($form) && ! $form>title->isValid()): ?>
+<p class="text-error"><?= $form>title->message() ?></p>
 <?php endif ?>
 ```
 
 This gets even more complicated if the form represents an update of an existing data set:
 
 ```php
-<input name="title" type="text" value="<?= isset($form) ? $this->e($form>title->value) : $post->title ?>">
-<?php if (isset($form) && ! $form>title->isValid): ?>
-<p class="text-error"><?= $form>title->message ?></p>
+<input name="title" type="text" value="<?= isset($form) ? $this->e($form->title->value()) : $post->title ?>">
+<?php if (isset($form) && ! $form->title->isValid()): ?>
+<p class="text-error"><?= $form>title->message() ?></p>
 <?php endif ?>
 ```
 
@@ -378,9 +378,9 @@ As an example:
 $form = $ruleSet->createValidResultSet(['title' => $post->title]);
 
 // In an HTML form:
-<input name="title" type="text" value="<?= $this->e($form>title->value) ?>">
-<?php if (! $form>title->isValid): ?>
-<p class="text-error"><?= $form>title->message ?></p>
+<input name="title" type="text" value="<?= $this->e($form>title->value()) ?>">
+<?php if (! $form>title->isValid()): ?>
+<p class="text-error"><?= $form>title->message() ?></p>
 <?php endif ?>
 ```
 
@@ -404,18 +404,21 @@ public static function createWithResultSetClass(string $resultSetClass, Rule ...
 ## ResultSet behavior
 
 Validation of a `Phly\RuleValidation\RuleSet` produces a `Phly\Validation\ResultSet`.
-Similar to the `RuleSet`, `ResultSet` is an iterable collection of `Phly\Validation\Result` instances.
+Similar to the `RuleSet`, `ResultSet` is an iterable collection of `Phly\Validation\ValidationResult` instances.
 It defines the following methods:
 
 ```php
 class ResultSet implements IteratorAggregate
 {
-    /** Returns the Result associated with $key, allowing property access to individual results */
-    final public function __get(string $key): ?Result;
+    /** Returns true if a ValidationResult is mapped to the given $key */
+    final public function __isset(string $key): bool;
+
+    /** Returns the ValidationResult associated with $key, allowing property access to individual results */
+    final public function __get(string $key): ?ValidationResult;
 
     final public function getIterator(): Traversable;
 
-    final public function add(Result $result): void;
+    final public function add(ValidationResult $result): void;
 
     final public function isValid(): bool;
 
@@ -426,7 +429,7 @@ class ResultSet implements IteratorAggregate
     final public function getValues(): array;
 
     /** @throws Phly\RuleValidation\Exception\UnknownResultException */
-    final public function getResultForKey(string $key): Result;
+    final public function getResultForKey(string $key): ValidationResult;
 
     /**
      * Freeze the result set
@@ -439,7 +442,7 @@ class ResultSet implements IteratorAggregate
 
 > Internally, `RuleSet` calls `freeze()` on a `ResultSet` before returning it from `RuleSet::validate()`.
 
-You can retrieve individual `Phly\RuleValidation\Result` instances using the `getResultForKey(string $key)` method, or via property access, using the key:
+You can retrieve individual `Phly\RuleValidation\ValidationResult` instances using the `getResultForKey(string $key)` method, or via property access, using the key:
 
 ```php
 $result = $results->getResultForKey('flag');
@@ -450,41 +453,60 @@ Access individual results when generating an HTML form:
 
 ```php
 <?php $title = $results->title; // or $results->getResultForKey('title') ?>
-<input type="text" name="title" value="<?= $this->e($title->value) ?>">
-<?php if (! $title->isValid): ?>
-<p class="form-error"><?= $this->e($title->message) ?></p>
+<input type="text" name="title" value="<?= $this->e($title->value()) ?>">
+<?php if (! $title->isValid()): ?>
+<p class="form-error"><?= $this->e($title->message()) ?></p>
 <?php endif ?>
 ```
 
 > The above example is using the [PlatesPHP templating engine](https://platesphp.com/).
 
-### Result class
+### ValidationResult interface
 
-The `Phly\RuleValidation\Result` class has the following API:
+The `Phly\Validation\ValidationResult` interface is defined as follows:
 
 ```php
 namespace Phly\RuleValidation;
 
-final readonly class Result
+interface ValidationResult
 {
-    public string $key;
-    public bool $isValid;
-    public mixed $value;
-    public ?string $message = null;
+    /** @psalm-return non-empty-string */
+    public function key(): string;
 
+    public function isValid(): bool;
+
+    public function value(): mixed;
+
+    public function message(): ?string;
+}
+```
+
+### Result class
+
+The `Phly\RuleValidation\Result` class implements `ValidationResult`, and allows for arbitrary values.
+In addition to the methods from the interface, it has the following API:
+
+```php
+namespace Phly\RuleValidation;
+
+/** @template T */
+class Result implements ValidationResult
+{
+    /** @return self<T> */
     public static function forValidValue(mixed $value): self;
 
     public static function forInvalidValue(mixed $value, string $message): self;
 
+    /** @return self<null> */
     public static function forMissingValue(string $message): self;
 }
 ```
 
-Your `Rule` classes will produce `Result` instances using one of the named constructors (`forValidValue()`, `forInvalidValue()`), and your code can then access the state using the public properties (`$isValid`, `$value`, `$message`).
+You can define your `Rule` classes to produce `Result` instances using one of the named constructors (`forValidValue()`, `forInvalidValue()`), and your code can then access the state using the public properties (`$isValid`, `$value`, `$message`).
 
 ## Providing types
 
-`Result::$value` provides a `mixed` hint, and a `ResultSet` is defined as composing arbitrary `Result` instances.
+`Result::value()` provides a `mixed` hint, and a `ResultSet` is defined as composing arbitrary `ValidationResult` instances.
 This makes reasoning about what type of value is expected from results, and what results a result set composes, next to impossible.
 
 To provide a bit more safety, this library defines a number of template annotations.
@@ -621,24 +643,24 @@ Note that the returned `NestedResult` from `validate()` always contains a `Resul
 
 ```php
 <?php $author = $form->author; */
-<?php if (! $author->isValid): ?>
+<?php if (! $author->isValid()): ?>
 <p class="text-warning">Please ensure valid author information is provided</p>
 <?php endif ?>
 <label for="author-name">Author Name</label>
-<input name="author[name]" id="author-name" type="text" value="<?= $this->e($author->name->value) ?>">
-<?php if (! $author->name->isValid): ?>
-<p class="text-warning"><?= $author->name->message ?></p>
+<input name="author[name]" id="author-name" type="text" value="<?= $this->e($author->name->value()) ?>">
+<?php if (! $author->name->isValid()): ?>
+<p class="text-warning"><?= $author->name->message() ?></p>
 <?php endif ?>
 <label for="author-email">Author Name</label>
-<input name="author[email]" id="author-email" type="email" value="<?= $this->e($author->email->value) ?>">
-<?php if (! $author->email->isValid): ?>
-<p class="text-warning"><?= $author->email->message ?></p>
+<input name="author[email]" id="author-email" type="email" value="<?= $this->e($author->email->value()) ?>">
+<?php if (! $author->email->isValid()): ?>
+<p class="text-warning"><?= $author->email->message() ?></p>
 <?php endif ?>
 ```
 
-Calling `$author->value` will return the composed `ResultSet`, but calling on one of the composed result keys will give you the associated `Result` within the `ResultSet` directly.
+Calling `$author->value()` will return the composed `ResultSet`, but calling on one of the composed result keys will give you the associated `ValidationResult` within the `ResultSet` directly.
 This is particularly useful when mapping values to a value object or when passing values as arguments:
 
 ```php
-$author = new Author($author->name->value, $author->email->value);
+$author = new Author($author->name->value(), $author->email->value());
 ```

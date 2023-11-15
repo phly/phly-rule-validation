@@ -7,40 +7,65 @@ namespace Phly\RuleValidation;
 /**
  * @template T
  */
-class Result
+class Result implements ValidationResult
 {
     public const MISSING_MESSAGE = 'Missing required value';
 
-    final protected function __construct(
-        public readonly string $key,
-        public readonly bool $isValid,
-        /** @var T */
-        public readonly mixed $value,
-        public readonly ?string $message = null,
-    ) {
-    }
-
     /**
-     * @return Result<T>
+     * @psalm-param non-empty-string $key
+     * @return self<T>
      */
     public static function forValidValue(string $key, mixed $value): self
     {
-        return new static(key: $key, isValid: true, value: $value);
+        return new self(key: $key, isValid: true, value: $value);
     }
 
     /**
-     * @return Result<T>
+     * @psalm-param non-empty-string $key
      */
     public static function forInvalidValue(string $key, mixed $value, string $message): self
     {
-        return new static(key: $key, isValid: false, value: $value, message: $message);
+        return new self(key: $key, isValid: false, value: $value, message: $message);
     }
 
     /**
-     * @return Result<T>
+     * @psalm-param non-empty-string $key
+     * @return self<null>
      */
     public static function forMissingValue(string $key, string $message = self::MISSING_MESSAGE): self
     {
-        return new static(key: $key, isValid: false, value: null, message: $message);
+        return new self(key: $key, isValid: false, value: null, message: $message);
+    }
+
+    /** @return non-empty-string */
+    public function key(): string
+    {
+        return $this->key;
+    }
+
+    public function isValid(): bool
+    {
+        return $this->isValid;
+    }
+
+    /** @return T */
+    public function value(): mixed
+    {
+        return $this->value;
+    }
+
+    public function message(): ?string
+    {
+        return $this->message;
+    }
+
+    private function __construct(
+        /** @var non-empty-string */
+        private string $key,
+        private bool $isValid,
+        /** @var T */
+        private mixed $value,
+        private ?string $message = null,
+    ) {
     }
 }

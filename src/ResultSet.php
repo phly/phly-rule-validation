@@ -14,8 +14,8 @@ use function array_reduce;
 /**
  * Validation result set
  *
- * The main reason to extend this class is to provide a list of expected Result
- * mappings, with the expected Result value types:
+ * The main reason to extend this class is to provide a list of expected ValidationResult
+ * mappings, with the expected ValidationResult value types:
  *
  * <code>
  * /**
@@ -29,18 +29,18 @@ use function array_reduce;
  * </code>
  *
  * Doing so will give you IDE type hints, as well as allow Psalm and/or PHPStan
- * to infer about composed Result instances correctly.
+ * to infer about composed ValidationResult instances correctly.
  *
- * @template-implements IteratorAggregate<Result>
+ * @template-implements IteratorAggregate<ValidationResult>
  */
 class ResultSet implements IteratorAggregate
 {
     private bool $frozen = false;
 
-    /** @var array<string, Result> */
+    /** @var array<string, ValidationResult> */
     private $results = [];
 
-    final public function __construct(Result ...$results)
+    final public function __construct(ValidationResult ...$results)
     {
         foreach ($results as $result) {
             $this->add($result);
@@ -52,33 +52,34 @@ class ResultSet implements IteratorAggregate
         return array_key_exists($name, $this->results);
     }
 
-    final public function __get(string $key): ?Result
+    final public function __get(string $key): ?ValidationResult
     {
         return array_key_exists($key, $this->results) ? $this->results[$key] : null;
     }
 
-    /** @return Traversable<Result> */
+    /** @return Traversable<ValidationResult> */
     final public function getIterator(): Traversable
     {
         return new ArrayIterator($this->results);
     }
 
-    final public function add(Result $result): void
+    final public function add(ValidationResult $result): void
     {
         if ($this->frozen) {
             throw new Exception\ResultSetFrozenException();
         }
 
-        $key = $result->key;
+        /** @psalm-var non-empty-string $key */
+        $key = $result->key();
         $this->guardForDuplicateKey($key);
         $this->results[$key] = $result;
     }
 
     /** @throws Exception\UnknownResultException */
-    final public function getResultForKey(string $key): Result
+    final public function getResultForKey(string $key): ValidationResult
     {
         foreach ($this as $result) {
-            if ($result->key === $key) {
+            if ($result->key() === $key) {
                 return $result;
             }
         }
@@ -88,11 +89,8 @@ class ResultSet implements IteratorAggregate
 
     final public function isValid(): bool
     {
-        return array_reduce($this->results, function (bool $isValid, Result $result): bool {
-            if ($isValid === false) {
-                return false;
-            }
-            return $result->isValid;
+        return array_reduce($this->results, function (bool $isValid, ValidationResult $result): bool {
+            return $isValid === false ? false : $result->isValid();
         }, true);
     }
 
@@ -101,11 +99,11 @@ class ResultSet implements IteratorAggregate
     {
         $messages = [];
         foreach ($this->results as $key => $result) {
-            /** @var string $key */
-            if ($result->isValid) {
+            /** @var non-empty-string $key */
+            if ($result->isValid()) {
                 continue;
             }
-            $messages[$key] = $result->message;
+            $messages[$key] = $result->message();
         }
         return $messages;
     }
@@ -116,10 +114,10 @@ class ResultSet implements IteratorAggregate
         $values = [];
         foreach ($this->results as $key => $result) {
             /**
-             * @var string $key
+             * @var non-empty-string $key
              * @psalm-suppress MixedAssignment
              */
-            $values[$key] = $result->value;
+            $values[$key] = $result->value();
         }
         return $values;
     }

@@ -31,22 +31,22 @@ class BooleanRuleTest extends TestCase
     {
         $rule   = new BooleanRule(key: 'flag');
         $result = $rule->validate($value, []);
-        $this->assertFalse($result->isValid);
+        $this->assertFalse($result->isValid());
     }
 
     public function testReturnsValidResultForTrueValue(): void
     {
         $rule   = new BooleanRule(key: 'flag');
         $result = $rule->validate(true, []);
-        $this->assertTrue($result->isValid);
-        $this->assertTrue($result->value);
+        $this->assertTrue($result->isValid());
+        $this->assertTrue($result->value());
     }
 
     public function testReturnsValidResultForFalseValue(): void
     {
         $rule   = new BooleanRule(key: 'flag');
         $result = $rule->validate(false, []);
-        $this->assertTrue($result->isValid);
-        $this->assertFalse($result->value);
+        $this->assertTrue($result->isValid());
+        $this->assertFalse($result->value());
     }
 }

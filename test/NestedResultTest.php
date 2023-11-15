@@ -13,12 +13,6 @@ use UnexpectedValueException;
 
 class NestedResultTest extends TestCase
 {
-    public function testIssetReturnsFalseWhenComposedValueIsNotAResultSet(): void
-    {
-        $author = NestedResult::forValidValue('author', 'string');
-        $this->assertFalse(isset($author->name));
-    }
-
     public function testIssetReturnsFalseWhenComposedValueIsAResultSetButDoesNotContainRequestedName(): void
     {
         $resultSet = new ResultSet();
@@ -30,22 +24,14 @@ class NestedResultTest extends TestCase
     {
         $resultSet = new ResultSet(Result::forValidValue('name', 'Dirk Gently'));
         $author    = NestedResult::forValidValue('author', $resultSet);
+        /** @psalm-suppress RedundantCondition */
         $this->assertTrue(isset($author->name));
-    }
-
-    public function testGetRaisesExceptionWhenComposedValueIsNotAResultSet(): void
-    {
-        /** @var NestedResult<Result<string>> $author */
-        $author = NestedResult::forValidValue('author', 'string');
-
-        $this->expectException(OutOfRangeException::class);
-        $author->name;
     }
 
     public function testGetRaisesExceptionWhenComposedValueIsAResultSetButDoesNotContainRequestedName(): void
     {
         $resultSet = new ResultSet();
-        /** @var NestedResult<Result<string>> $author */
+        /** @var NestedResult<ResultSet> $author */
         $author = NestedResult::forValidValue('author', $resultSet);
 
         $this->expectException(OutOfRangeException::class);
@@ -57,7 +43,7 @@ class NestedResultTest extends TestCase
         $resultSet = new class extends ResultSet {
             public string $name = 'Dirk Gently';
         };
-        /** @var NestedResult<Result<string>> $author */
+        /** @var NestedResult<ResultSet> $author */
         $author = NestedResult::forValidValue('author', $resultSet);
 
         $this->expectException(UnexpectedValueException::class);
@@ -69,7 +55,7 @@ class NestedResultTest extends TestCase
         /** @var Result<string> $result */
         $result    = Result::forValidValue('name', 'Dirk Gently');
         $resultSet = new ResultSet($result);
-        /** @var NestedResult<Result<string>> $author */
+        /** @var NestedResult<ResultSet> $author */
         $author = NestedResult::forValidValue('author', $resultSet);
 
         $this->assertSame($result, $author->name);

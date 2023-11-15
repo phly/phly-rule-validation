@@ -9,11 +9,12 @@ use Phly\RuleValidation\Rule;
 
 final class CallbackRule implements Rule
 {
-    /** @var callable(mixed, array, string): Result */
+    /** @var callable(mixed, array, non-empty-string): Result */
     private $callback;
 
-    /** @param callable(mixed, array, string): Result $callback */
+    /** @param callable(mixed, array, non-empty-string): Result $callback */
     public function __construct(
+        /** @var non-empty-string */
         private string $key,
         callable $callback,
         private bool $required = true,

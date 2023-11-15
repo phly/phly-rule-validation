@@ -171,6 +171,7 @@ class RuleSetTest extends TestCase
                 // ...
             ];
 
+            /** @psalm-param non-empty-string $key */
             public function createMissingValueResultForKey(string $key): Result
             {
                 if (array_key_exists($key, self::MISSING_KEY_MAP)) {
@@ -185,13 +186,15 @@ class RuleSetTest extends TestCase
         $result = $ruleSet->validate([]);
 
         $this->assertFalse($result->isValid());
-        $this->assertSame('Please provide a title', $result->getResultForKey('title')->message);
+        $this->assertSame('Please provide a title', $result->getResultForKey('title')->message());
     }
 
+    /** @param non-empty-string $name */
     private function createDummyRule(string $name, mixed $default = null, bool $required = false): Rule
     {
         return new class ($name, $default, $required) implements Rule {
             public function __construct(
+                /** @var non-empty-string */
                 private string $name,
                 private mixed $default,
                 private bool $required,
@@ -232,13 +235,13 @@ class RuleSetTest extends TestCase
 
         $this->assertInstanceOf(ResultSet::class, $form);
         $this->assertTrue(isset($form->first));
-        $this->assertSame('initial value', $form->first->value);
+        $this->assertSame('initial value', $form->first->value());
         $this->assertTrue(isset($form->second));
-        $this->assertSame('string', $form->second->value);
+        $this->assertSame('string', $form->second->value());
         $this->assertTrue(isset($form->third));
-        $this->assertSame(1, $form->third->value);
+        $this->assertSame(1, $form->third->value());
         $this->assertTrue(isset($form->fourth));
-        $this->assertSame(42, $form->fourth->value);
+        $this->assertSame(42, $form->fourth->value());
     }
 
     public function testCreateValidResultSetOmitsResultsForKeysNotMatchingAnyRules(): void
@@ -250,7 +253,7 @@ class RuleSetTest extends TestCase
 
         $this->assertInstanceOf(ResultSet::class, $form);
         $this->assertTrue(isset($form->first));
-        $this->assertSame('initial value', $form->first->value);
+        $this->assertSame('initial value', $form->first->value());
         $this->assertFalse(isset($form->fourth));
     }
 
@@ -263,7 +266,7 @@ class RuleSetTest extends TestCase
 
         $this->assertInstanceOf(ResultSet::class, $form);
         $this->assertTrue(isset($form->first));
-        $this->assertNull($form->first->value);
+        $this->assertNull($form->first->value());
     }
 
     public function testCreateValidResultSetRaisesExceptionForRequiredRulesWithNoDefaultAndNoValueInValueMap(): void
@@ -287,10 +290,10 @@ class RuleSetTest extends TestCase
         $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
 
         $this->assertInstanceOf(TestAsset\CustomResultSet::class, $form);
-        $this->assertSame('initial value', $form->first->value);
-        $this->assertSame('string', $form->second->value);
-        $this->assertSame(1, $form->third->value);
-        $this->assertSame(42, $form->fourth->value);
+        $this->assertSame('initial value', $form->first->value());
+        $this->assertSame('string', $form->second->value());
+        $this->assertSame(1, $form->third->value());
+        $this->assertSame(42, $form->fourth->value());
     }
 
     public function testValidateAllowsProvidingAlternateResultClassName(): void

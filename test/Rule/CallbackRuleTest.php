@@ -16,6 +16,7 @@ class CallbackRuleTest extends TestCase
         $key  = 'fieldKey';
         $rule = new CallbackRule(
             $key,
+            /** @param non-empty-string $key */
             fn (mixed $value, array $data, string $key) => Result::forValidValue($key, $value),
         );
 
@@ -74,7 +75,7 @@ class CallbackRuleTest extends TestCase
         $rule   = new CallbackRule($key, $callback);
         $result = $rule->validate('some value', ['fieldKey' => 'some value', 'someOtherKey' => 'string']);
 
-        $this->assertTrue($result->isValid);
-        $this->assertSame($resultValue, $result->value);
+        $this->assertTrue($result->isValid());
+        $this->assertSame($resultValue, $result->value());
     }
 }

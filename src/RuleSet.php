@@ -27,8 +27,10 @@ class RuleSet implements IteratorAggregate
      *
      * Override this method to customize the message used for individual (or all)
      * missing values.
+     *
+     * @psalm-param non-empty-string $key
      */
-    public function createMissingValueResultForKey(string $key): Result
+    public function createMissingValueResultForKey(string $key): ValidationResult
     {
         return Result::forMissingValue($key);
     }
@@ -85,6 +87,7 @@ class RuleSet implements IteratorAggregate
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
+            /** @psalm-var non-empty-string $key */
             if (array_key_exists($key, $data)) {
                 $resultSet->add($rule->validate($data[$key], $data));
                 continue;

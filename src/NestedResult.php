@@ -35,18 +35,15 @@ use function sprintf;
  *
  * Values provided to NestedResult MUST be ResultSet instances.
  *
- * @template N
- * @template-extends Result<N>
+ * @template T of ResultSet
  */
-class NestedResult extends Result
+class NestedResult implements ValidationResult
 {
+    public const MISSING_MESSAGE = 'Missing required value';
+
     /** @psalm-param non-empty-string $name */
     public function __isset(string $name): bool
     {
-        if (! $this->value instanceof ResultSet) {
-            return false;
-        }
-
         return isset($this->value->$name);
     }
 
@@ -57,14 +54,6 @@ class NestedResult extends Result
      */
     public function __get(string $name): Result
     {
-        if (! $this->value instanceof ResultSet) {
-            throw new OutOfRangeException(sprintf(
-                '%s instance does not compose a %s value; property access not available',
-                self::class,
-                ResultSet::class,
-            ));
-        }
-
         if (! isset($this->value->$name)) {
             throw new OutOfRangeException(sprintf(
                 '%s instance composed by %s does not contain a "%s" result',
@@ -85,5 +74,70 @@ class NestedResult extends Result
         }
 
         return $value;
+    }
+
+    /**
+     * @template R of ResultSet
+     * @psalm-param non-empty-string $key
+     * @psalm-param R $value
+     * @return self<R>
+     */
+    public static function forValidValue(string $key, ResultSet $value): self
+    {
+        /** @var self<R> $result */
+        $result = new self(key: $key, isValid: true, value: $value);
+
+        return $result;
+    }
+
+    /**
+     * @psalm-param non-empty-string $key
+     */
+    public static function forInvalidValue(string $key, ResultSet $value, string $message): self
+    {
+        return new self(key: $key, isValid: false, value: $value, message: $message);
+    }
+
+    /**
+     * @psalm-param non-empty-string $key
+     * @return self<ResultSet>
+     */
+    public static function forMissingValue(string $key, string $message = self::MISSING_MESSAGE): self
+    {
+        $resultSet = new ResultSet();
+        $resultSet->freeze();
+        return new self(key: $key, isValid: false, value: $resultSet, message: $message);
+    }
+
+    /** @return non-empty-string */
+    public function key(): string
+    {
+        return $this->key;
+    }
+
+    public function isValid(): bool
+    {
+        return $this->isValid;
+    }
+
+    /** @return T */
+    public function value(): mixed
+    {
+        return $this->value;
+    }
+
+    public function message(): ?string
+    {
+        return $this->message;
+    }
+
+    private function __construct(
+        /** @var non-empty-string */
+        private string $key,
+        private bool $isValid,
+        /** @var T */
+        private ResultSet $value,
+        private ?string $message = null,
+    ) {
     }
 }

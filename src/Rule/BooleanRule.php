@@ -14,6 +14,7 @@ use function sprintf;
 class BooleanRule implements Rule
 {
     public function __construct(
+        /** @var non-empty-string */
         private string $key,
         private bool $required = true,
         private bool $default = false,

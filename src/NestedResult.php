@@ -36,6 +36,7 @@ use function sprintf;
  * Values provided to NestedResult MUST be ResultSet instances.
  *
  * @template T of ResultSet
+ * @template-implements ValidationResult<T>
  */
 class NestedResult implements ValidationResult
 {

@@ -6,14 +6,17 @@ namespace Phly\RuleValidation;
 
 /**
  * @template T
+ * @template-implements ValidationResult<T>
  */
 class Result implements ValidationResult
 {
     public const MISSING_MESSAGE = 'Missing required value';
 
     /**
+     * @template V
      * @psalm-param non-empty-string $key
-     * @return self<T>
+     * @psalm-param V $value
+     * @return self<V>
      */
     public static function forValidValue(string $key, mixed $value): self
     {

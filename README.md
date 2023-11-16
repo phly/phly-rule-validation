@@ -468,6 +468,7 @@ The `Phly\Validation\ValidationResult` interface is defined as follows:
 ```php
 namespace Phly\RuleValidation;
 
+/** @template T */
 interface ValidationResult
 {
     /** @psalm-return non-empty-string */
@@ -475,6 +476,7 @@ interface ValidationResult
 
     public function isValid(): bool;
 
+    /** @return T */
     public function value(): mixed;
 
     public function message(): ?string;
@@ -489,16 +491,27 @@ In addition to the methods from the interface, it has the following API:
 ```php
 namespace Phly\RuleValidation;
 
-/** @template T */
+/**
+ * @template T
+ * @template-implements ValidationResult<T>
+ */
 class Result implements ValidationResult
 {
-    /** @return self<T> */
-    public static function forValidValue(mixed $value): self;
+    /**
+     * @template V
+     * @psalm-param non-empty-string $key
+     * @psalm-param V $value
+     * @return self<V>
+     */
+    public static function forValidValue(string $key, mixed $value): self;
 
-    public static function forInvalidValue(mixed $value, string $message): self;
+    /**
+     * @psalm-param non-empty-string $key
+     */
+    public static function forInvalidValue(string $key, mixed $value, string $message): self;
 
     /** @return self<null> */
-    public static function forMissingValue(string $message): self;
+    public static function forMissingValue(string $key, string $message): self;
 }
 ```
 
@@ -511,9 +524,65 @@ This makes reasoning about what type of value is expected from results, and what
 
 To provide a bit more safety, this library defines a number of template annotations.
 
-### Result
+### ValidationResult
 
-The `Result` class allows templating the type of the `$value` it composes:
+As noted in the interface declaration under the [ValidationResult interface section](#validationresult-interface), `ValidationResult` defines a template.
+All implementations are expected to implement the template.
+
+This can be done in a couple of ways.
+
+First, by annotating it at the class level:
+
+```php
+/** @template-implements ValidationResult<int> */
+class IntegerResult implements ValidationResult
+{
+    // ...
+}
+```
+
+If you want your result to allow extension itself, or allow userland annotations to define the result type, you can define your own template:
+
+```php
+/**
+ * @template T of int|float
+ * @template-implements ValidationResult<T>
+ */
+class NumericResult implements ValidationResult
+{
+    /** @return T */
+    public function value(): int|float
+    {
+    }
+
+    // ...
+}
+```
+
+Consumers would then denote the type, potentially within a result set:
+
+```php
+/**
+ * @property-read TextResult $title
+ * @property-read NumericResult<float> $amount
+ */
+class TransactionFormResult extends ResultSet
+{
+}
+```
+
+> See more on this in the section below marked [ResultSet](#resultset).
+
+Or possibly when retrieving it:
+
+```php
+/** @var NumericResult<float> $amount */
+$amount = $transactionForm->amount;
+```
+
+#### Result
+
+An example of the above in practice is the `Result` class, which allows declaring the type of the `$value` it composes:
 
 ```php
 /** @var Result<int> $count */
@@ -541,6 +610,10 @@ This will allow you to annotate instances:
 ```php
 /** @var CustomResultSet $result */
 $result = $ruleSet->validate($data);
+
+// Static analysis and IDEs will then understand that
+// $date is a DateTimeImmutable:
+$date = $result->creationDate;
 ```
 
 It also gives you a value you can use with rule sets...
@@ -586,7 +659,7 @@ While this project does not aim to provide comprehensive support for nested resu
 Within a `Rule::validate()` implementation, you can choose to return a `NestedResult` instead:
 
 ```php
-$rule = new class implements Rule {
+$rule = new /** @template-extends RuleSet<ResultSet> */ class implements Rule {
     /** @var RuleSet{name: Result<string>, email: Result<string>} */
     private RuleSet $rules;
 

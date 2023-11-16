@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PhlyTest\RuleValidation;
+namespace PhlyTest\RuleValidation\RuleSet;
 
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
 use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
@@ -10,7 +10,8 @@ use Phly\RuleValidation\Exception\ResultSetFrozenException;
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
-use Phly\RuleValidation\RuleSet;
+use Phly\RuleValidation\RuleSet\RuleSet;
+use PhlyTest\RuleValidation\TestAsset\CustomResultSet;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 
@@ -280,8 +281,8 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetUsesProvidedResultSetClassNameWhenPresent(): void
     {
-        /** @var RuleSet<TestAsset\CustomResultSet> $ruleSet */
-        $ruleSet = RuleSet::createWithResultSetClass(TestAsset\CustomResultSet::class);
+        /** @var RuleSet<CustomResultSet> $ruleSet */
+        $ruleSet = RuleSet::createWithResultSetClass(CustomResultSet::class);
         $ruleSet->add($this->createDummyRule('first'));
         $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
         $ruleSet->add($this->createDummyRule('third', default: 1));
@@ -289,7 +290,7 @@ class RuleSetTest extends TestCase
 
         $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
 
-        $this->assertInstanceOf(TestAsset\CustomResultSet::class, $form);
+        $this->assertInstanceOf(CustomResultSet::class, $form);
         $this->assertSame('initial value', $form->first->value());
         $this->assertSame('string', $form->second->value());
         $this->assertSame(1, $form->third->value());
@@ -298,8 +299,8 @@ class RuleSetTest extends TestCase
 
     public function testValidateAllowsProvidingAlternateResultClassName(): void
     {
-        /** @var RuleSet<TestAsset\CustomResultSet> $ruleSet */
-        $ruleSet = RuleSet::createWithResultSetClass(TestAsset\CustomResultSet::class);
+        /** @var RuleSet<CustomResultSet> $ruleSet */
+        $ruleSet = RuleSet::createWithResultSetClass(CustomResultSet::class);
         $ruleSet->add($this->createDummyRule('first'));
         $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
         $ruleSet->add($this->createDummyRule('third', default: 1));
@@ -307,6 +308,6 @@ class RuleSetTest extends TestCase
 
         $result = $ruleSet->validate(['some' => 'data']);
 
-        $this->assertInstanceOf(TestAsset\CustomResultSet::class, $result);
+        $this->assertInstanceOf(CustomResultSet::class, $result);
     }
 }

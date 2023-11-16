@@ -2,10 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Phly\RuleValidation;
+namespace Phly\RuleValidation\RuleSet;
 
 use ArrayIterator;
 use IteratorAggregate;
+use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
+use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
+use Phly\RuleValidation\Result;
+use Phly\RuleValidation\ResultSet;
+use Phly\RuleValidation\Rule;
+use Phly\RuleValidation\ValidationResult;
 use Traversable;
 
 use function array_key_exists;
@@ -122,7 +128,7 @@ class RuleSet implements IteratorAggregate
             }
 
             if ($rule->required() && null === $rule->default()) {
-                throw Exception\RequiredRuleWithNoDefaultValueException::forKey($key, ResultSet::class);
+                throw RequiredRuleWithNoDefaultValueException::forKey($key, ResultSet::class);
             }
 
             $resultSet->add(Result::forValidValue($key, $rule->default()));
@@ -135,7 +141,7 @@ class RuleSet implements IteratorAggregate
     private function guardForDuplicateKey(string $key): void
     {
         if (array_key_exists($key, $this->rules)) {
-            throw Exception\DuplicateRuleKeyException::forKey($key);
+            throw DuplicateRuleKeyException::forKey($key);
         }
     }
 }

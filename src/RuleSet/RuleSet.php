@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation\RuleSet;
 
-use ArrayIterator;
-use IteratorAggregate;
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
 use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
 use Phly\RuleValidation\Result;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
+use Phly\RuleValidation\RuleSetValidator;
 use Phly\RuleValidation\ValidationResult;
-use Traversable;
 
 use function array_key_exists;
 
@@ -20,7 +18,7 @@ use function array_key_exists;
  * @template T of ResultSet
  * @template-implements IteratorAggregate<Rule>
  */
-class RuleSet implements IteratorAggregate
+class RuleSet implements RuleSetValidator
 {
     /** @var class-string<T> */
     protected string $resultSetClass = ResultSet::class;
@@ -60,12 +58,6 @@ class RuleSet implements IteratorAggregate
         }
     }
 
-    /** @return Traversable<Rule> */
-    final public function getIterator(): Traversable
-    {
-        return new ArrayIterator($this->rules);
-    }
-
     final public function add(Rule $rule): void
     {
         $key = $rule->key();
@@ -73,9 +65,9 @@ class RuleSet implements IteratorAggregate
         $this->rules[$key] = $rule;
     }
 
-    final public function getRuleForKey(string $key): ?Rule
+    final public function getRule(string $key): ?Rule
     {
-        foreach ($this as $rule) {
+        foreach ($this->rules as $rule) {
             if ($rule->key() === $key) {
                 return $rule;
             }

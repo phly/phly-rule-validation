@@ -39,7 +39,7 @@ class RuleSetTest extends TestCase
         new RuleSet(...[$rule1, $rule2]);
     }
 
-    public function testGetRuleForKeyReturnsRuleMatchingKey(): void
+    public function testGetRuleReturnsRuleMatchingKey(): void
     {
         $rule1 = $this->createDummyRule('first');
         $rule2 = $this->createDummyRule('second');
@@ -48,20 +48,20 @@ class RuleSetTest extends TestCase
 
         $ruleSet = new RuleSet($rule2, $rule3, $rule1, $rule4);
 
-        $this->assertSame($rule1, $ruleSet->getRuleForKey('first'));
-        $this->assertSame($rule2, $ruleSet->getRuleForKey('second'));
-        $this->assertSame($rule3, $ruleSet->getRuleForKey('third'));
-        $this->assertSame($rule4, $ruleSet->getRuleForKey('fourth'));
+        $this->assertSame($rule1, $ruleSet->getRule('first'));
+        $this->assertSame($rule2, $ruleSet->getRule('second'));
+        $this->assertSame($rule3, $ruleSet->getRule('third'));
+        $this->assertSame($rule4, $ruleSet->getRule('fourth'));
     }
 
-    public function testGetRuleForKeyReturnsNullIfNoRuleMatchingKeyFound(): void
+    public function testGetRuleReturnsNullIfNoRuleMatchingKeyFound(): void
     {
         $rule1 = $this->createDummyRule('first');
         $rule2 = $this->createDummyRule('second');
 
         $ruleSet = new RuleSet($rule1, $rule2);
 
-        $this->assertNull($ruleSet->getRuleForKey('fourth'));
+        $this->assertNull($ruleSet->getRule('fourth'));
     }
 
     public function testValidationReturnsAnEmptyResultSetWhenNoRulesPresent(): void

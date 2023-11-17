@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Phly\RuleValidation;
 
 use ArrayIterator;
+use Countable;
 use IteratorAggregate;
 use Traversable;
 
@@ -33,7 +34,7 @@ use function array_reduce;
  *
  * @template-implements IteratorAggregate<ValidationResult>
  */
-class ResultSet implements IteratorAggregate
+class ResultSet implements Countable, IteratorAggregate
 {
     private bool $frozen = false;
 
@@ -55,6 +56,11 @@ class ResultSet implements IteratorAggregate
     final public function __get(string $key): ?ValidationResult
     {
         return array_key_exists($key, $this->results) ? $this->results[$key] : null;
+    }
+
+    public function count(): int
+    {
+        return count($this->results);
     }
 
     /** @return Traversable<ValidationResult> */

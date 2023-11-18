@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation\Result;
 
-use Phly\RuleValidation\Result;
 use Phly\RuleValidation\ValidationResult;
 
 final class MissingValueResultFactory implements CreateMissingValueResult

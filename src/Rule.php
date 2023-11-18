@@ -15,7 +15,11 @@ interface Rule
      */
     public function key(): string;
 
-    /** Validate the value */
+    /**
+     * Validate the value
+     *
+     * @param array<non-empty-string, mixed> $context
+     */
     public function validate(mixed $value, array $context): ValidationResult;
 
     /** Default value to use when not required and no value provided */

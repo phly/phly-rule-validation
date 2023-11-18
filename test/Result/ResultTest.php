@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PhlyTest\RuleValidation;
+namespace PhlyTest\RuleValidation\Result;
 
 use Generator;
-use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\Result;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

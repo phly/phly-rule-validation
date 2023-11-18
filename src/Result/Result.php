@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Phly\RuleValidation;
+namespace Phly\RuleValidation\Result;
+
+use Phly\RuleValidation\ValidationResult;
 
 /**
  * @template T

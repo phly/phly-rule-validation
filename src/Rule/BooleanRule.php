@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation\Rule;
 
-use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\Rule;
+use Phly\RuleValidation\ValidationResult;
 
 use function get_debug_type;
 use function is_bool;
@@ -31,8 +32,12 @@ class BooleanRule implements Rule
         return $this->key;
     }
 
-    /** Validate the value */
-    public function validate(mixed $value, array $context): Result
+    /**
+     * Validate the value
+     *
+     * @return ValidationResult<bool>
+     */
+    public function validate(mixed $value, array $context): ValidationResult
     {
         if (! is_bool($value)) {
             return Result::forInvalidValue($this->key, $value, sprintf(
@@ -44,7 +49,7 @@ class BooleanRule implements Rule
         return Result::forValidValue($this->key, $value);
     }
 
-    public function default(): mixed
+    public function default(): bool
     {
         return $this->default;
     }

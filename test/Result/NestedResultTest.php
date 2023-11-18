@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PhlyTest\RuleValidation;
+namespace PhlyTest\RuleValidation\Result;
 
 use OutOfRangeException;
-use Phly\RuleValidation\NestedResult;
-use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\NestedResult;
+use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\ResultSet;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;

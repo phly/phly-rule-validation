@@ -6,8 +6,8 @@ namespace Phly\RuleValidation\RuleSet;
 
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
 use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
-use Phly\RuleValidation\Result;
 use Phly\RuleValidation\Result\CreateMissingValueResult;
+use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
 use Phly\RuleValidation\RuleSetValidator;

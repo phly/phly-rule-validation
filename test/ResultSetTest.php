@@ -6,7 +6,7 @@ namespace PhlyTest\RuleValidation;
 
 use Phly\RuleValidation\Exception\ResultSetFrozenException;
 use Phly\RuleValidation\Exception\UnknownResultException;
-use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\ResultSet;
 use PHPUnit\Framework\TestCase;
 

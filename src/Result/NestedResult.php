@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Phly\RuleValidation;
+namespace Phly\RuleValidation\Result;
 
 use OutOfRangeException;
+use Phly\RuleValidation\ResultSet;
+use Phly\RuleValidation\ValidationResult;
 use UnexpectedValueException;
 
 use function get_class;
@@ -53,7 +55,7 @@ class NestedResult implements ValidationResult
      * @throws OutOfRangeException When the value property is not a ResultSet,
      *     or the given $name is not a known property of the ResultSet.
      */
-    public function __get(string $name): Result
+    public function __get(string $name): ValidationResult
     {
         if (! isset($this->value->$name)) {
             throw new OutOfRangeException(sprintf(
@@ -66,11 +68,11 @@ class NestedResult implements ValidationResult
 
         $value = $this->value->$name;
 
-        if (! $value instanceof Result) {
+        if (! $value instanceof ValidationResult) {
             throw new UnexpectedValueException(sprintf(
                 'Value associated with "%s" is not a %s instance',
                 $name,
-                Result::class,
+                ValidationResult::class,
             ));
         }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhlyTest\RuleValidation\Rule;
 
-use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\Rule\CallbackRule;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
@@ -68,7 +68,8 @@ class CallbackRuleTest extends TestCase
         $key         = 'fieldKey';
         $resultValue = 'string';
         $result      = Result::forValidValue($key, $resultValue);
-        $callback    = function (mixed $value, array $context) use ($result): Result {
+        /** @var callable(mixed, array<non-empty-string, mixed>, non-empty-string): Result $callback */
+        $callback    = function (mixed $value, array $context, string $key) use ($result): Result {
             return $result;
         };
 

@@ -16,98 +16,54 @@ use function array_key_exists;
 
 /**
  * @template T of ResultSet
- * @template-implements IteratorAggregate<Rule>
+ * @template-implements RuleSetValidator<T>
  */
 class RuleSet implements RuleSetValidator
 {
     /** @var class-string<T> */
-    protected string $resultSetClass = ResultSet::class;
+    private readonly string $resultSetClass;
+
+    /**
+     * @readonly
+     * @var callable(non-empty-string): ValidationResult
+     */
+    private $missingValueResultFactory;
 
     /** @var array<string, Rule> */
     private array $rules = [];
 
-    /**
-     * Create a Result representing a missing value
-     *
-     * Override this method to customize the message used for individual (or all)
-     * missing values.
-     *
-     * @psalm-param non-empty-string $key
-     */
-    public function createMissingValueResultForKey(string $key): ValidationResult
+    /** @return self<ResultSet> */
+    public static function createWithRules(Rule ...$rules): self
     {
-        return Result::forMissingValue($key);
-    }
-
-    /**
-     * @param class-string<ResultSet> $resultSetClass
-     * @return RuleSet
-     */
-    final public static function createWithResultSetClass(string $resultSetClass, Rule ...$rules): self
-    {
-        $ruleSet                 = new static(...$rules);
-        $ruleSet->resultSetClass = $resultSetClass;
-
-        return $ruleSet;
-    }
-
-    final public function __construct(Rule ...$rules)
-    {
+        $options = new RuleSetOptions();
         foreach ($rules as $rule) {
-            $this->add($rule);
+            $options->addRule($rule);
         }
+
+        return new self($options);
     }
 
-    final public function add(Rule $rule): void
+    public function __construct(Options $options)
     {
-        $key = $rule->key();
-        $this->guardForDuplicateKey($key);
-        $this->rules[$key] = $rule;
-    }
+        /** @todo Remove suppression once Psalm can match concrete class name to template */
+        /** @psalm-suppress PropertyTypeCoercion */
+        $this->resultSetClass            = $options->resultSetClass();
+        $this->missingValueResultFactory = $options->missingValueResultFactory();
 
-    final public function getRule(string $key): ?Rule
-    {
-        foreach ($this->rules as $rule) {
-            if ($rule->key() === $key) {
-                return $rule;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * @param array<non-empty-string, mixed> $data
-     * @return T
-     */
-    final public function validate(array $data): ResultSet
-    {
-        $resultSet = new ($this->resultSetClass)();
-
-        foreach ($this->rules as $rule) {
+        $rules = [];
+        foreach ($options->rules() as $rule) {
             $key = $rule->key();
-            /** @psalm-var non-empty-string $key */
-            if (array_key_exists($key, $data)) {
-                $resultSet->add($rule->validate($data[$key], $data));
-                continue;
-            }
-
-            if ($rule->required()) {
-                $resultSet->add($this->createMissingValueResultForKey($key));
-                continue;
-            }
-
-            $resultSet->add(Result::forValidValue($key, $rule->default()));
+            $this->guardForDuplicateKey($key, $rules);
+            $rules[$key] = $rule;
         }
-
-        $resultSet->freeze();
-        return $resultSet;
+        $this->rules = $rules;
     }
 
     /**
      * @param array<non-empty-string, mixed> $valueMap
      * @return T
      */
-    final public function createValidResultSet(array $valueMap = []): ResultSet
+    public function createValidResultSet(array $valueMap = []): ResultSet
     {
         $resultSet = new ($this->resultSetClass)();
 
@@ -129,10 +85,49 @@ class RuleSet implements RuleSetValidator
         return $resultSet;
     }
 
-    /** @throws Exception\DuplicateRuleKeyException */
-    private function guardForDuplicateKey(string $key): void
+    /** @param non-empty-string $key */
+    final public function getRule(string $key): ?Rule
     {
-        if (array_key_exists($key, $this->rules)) {
+        return array_key_exists($key, $this->rules) ? $this->rules[$key] : null;
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $data
+     * @return T
+     */
+    final public function validate(array $data): ResultSet
+    {
+        $missingValueResultFactory = $this->missingValueResultFactory;
+        $resultSet                 = new ($this->resultSetClass)();
+
+        foreach ($this->rules as $rule) {
+            $key = $rule->key();
+            /** @psalm-var non-empty-string $key */
+            if (array_key_exists($key, $data)) {
+                $resultSet->add($rule->validate($data[$key], $data));
+                continue;
+            }
+
+            if ($rule->required()) {
+                $resultSet->add($missingValueResultFactory($key));
+                continue;
+            }
+
+            $resultSet->add(Result::forValidValue($key, $rule->default()));
+        }
+
+        $resultSet->freeze();
+        return $resultSet;
+    }
+
+    /**
+     * @param non-empty-string $key
+     * @param array<string, Rule> $rules
+     * @throws DuplicateRuleKeyException
+     */
+    private function guardForDuplicateKey(string $key, array $rules): void
+    {
+        if (array_key_exists($key, $rules)) {
             throw DuplicateRuleKeyException::forKey($key);
         }
     }

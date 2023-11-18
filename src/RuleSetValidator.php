@@ -9,7 +9,7 @@ interface RuleSetValidator
 {
     /**
      * @param array<non-empty-string, mixed> $data
-     * @return T 
+     * @return T
      */
     public function validate(array $data): ResultSet;
 

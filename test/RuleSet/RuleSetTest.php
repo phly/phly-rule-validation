@@ -11,6 +11,7 @@ use Phly\RuleValidation\Result;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
 use Phly\RuleValidation\RuleSet\RuleSet;
+use Phly\RuleValidation\RuleSet\RuleSetOptions;
 use PhlyTest\RuleValidation\TestAsset\CustomResultSet;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
@@ -19,24 +20,14 @@ use function array_key_exists;
 
 class RuleSetTest extends TestCase
 {
-    public function testCallingAddWithARuleWithANameUsedByAnotherRuleInTheRuleSetRaisesDuplicateKeyException(): void
-    {
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-
-        $this->expectException(DuplicateRuleKeyException::class);
-        $this->expectExceptionMessage('Duplicate validation rule detected for key "first"');
-        $ruleSet->add($this->createDummyRule('first'));
-    }
-
     public function testInstantiatingRuleSetWithRulesForSameKeyRaisesDuplicateKeyException(): void
     {
-        $rule1 = $this->createDummyRule('first');
-        $rule2 = $this->createDummyRule('first');
-
         $this->expectException(DuplicateRuleKeyException::class);
         $this->expectExceptionMessage('Duplicate validation rule detected for key "first"');
-        new RuleSet(...[$rule1, $rule2]);
+        RuleSet::createWithRules(
+            $this->createDummyRule('first'),
+            $this->createDummyRule('first'),
+        );
     }
 
     public function testGetRuleReturnsRuleMatchingKey(): void
@@ -46,7 +37,7 @@ class RuleSetTest extends TestCase
         $rule3 = $this->createDummyRule('third');
         $rule4 = $this->createDummyRule('fourth');
 
-        $ruleSet = new RuleSet($rule2, $rule3, $rule1, $rule4);
+        $ruleSet = RuleSet::createWithRules($rule2, $rule3, $rule1, $rule4);
 
         $this->assertSame($rule1, $ruleSet->getRule('first'));
         $this->assertSame($rule2, $ruleSet->getRule('second'));
@@ -59,14 +50,14 @@ class RuleSetTest extends TestCase
         $rule1 = $this->createDummyRule('first');
         $rule2 = $this->createDummyRule('second');
 
-        $ruleSet = new RuleSet($rule1, $rule2);
+        $ruleSet = RuleSet::createWithRules($rule1, $rule2);
 
         $this->assertNull($ruleSet->getRule('fourth'));
     }
 
     public function testValidationReturnsAnEmptyResultSetWhenNoRulesPresent(): void
     {
-        $ruleSet = new RuleSet();
+        $ruleSet = new RuleSet(new RuleSetOptions());
         $result  = $ruleSet->validate(['some' => 'data']);
         $this->assertCount(0, $result);
     }
@@ -87,10 +78,11 @@ class RuleSetTest extends TestCase
             'fifth' => [1, 2, 3],
         ];
 
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-        $ruleSet->add($this->createDummyRule('third'));
-        $ruleSet->add($this->createDummyRule('fifth'));
+        $ruleSet = RuleSet::createWithRules(
+            $this->createDummyRule('first'),
+            $this->createDummyRule('third'),
+            $this->createDummyRule('fifth'),
+        );
 
         $result = $ruleSet->validate($data);
 
@@ -126,10 +118,11 @@ class RuleSetTest extends TestCase
             'third' => 'Missing required value',
         ];
 
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-        $ruleSet->add($this->createDummyRule('third', required: true));
-        $ruleSet->add($this->createDummyRule('fifth'));
+        $ruleSet = RuleSet::createWithRules(
+            $this->createDummyRule('first'),
+            $this->createDummyRule('third', required: true),
+            $this->createDummyRule('fifth'),
+        );
 
         $result = $ruleSet->validate($data);
 
@@ -153,10 +146,11 @@ class RuleSetTest extends TestCase
             'fifth' => [1, 2, 3],
         ];
 
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-        $ruleSet->add($this->createDummyRule('third', default: 1));
-        $ruleSet->add($this->createDummyRule('fifth'));
+        $ruleSet = RuleSet::createWithRules(
+            $this->createDummyRule('first'),
+            $this->createDummyRule('third', default: 1),
+            $this->createDummyRule('fifth'),
+        );
 
         $result = $ruleSet->validate($data);
 
@@ -164,27 +158,31 @@ class RuleSetTest extends TestCase
         $this->assertEquals($expected, $result->getValues());
     }
 
-    public function testValidationAllowsOverridingMissingValueMessageViaExtension(): void
+    public function testValidationAllowsOverridingMissingValueMessageViaOptions(): void
     {
-        $ruleSet = new /** @template-extends RuleSet<ResultSet> */ class extends RuleSet {
-            private const MISSING_KEY_MAP = [
-                'title' => 'Please provide a title',
-                // ...
-            ];
+        $options = new RuleSetOptions();
+        $options->setMissingValueResultFactory(
+            new class {
+                private const MISSING_KEY_MAP = [
+                    'title' => 'Please provide a title',
+                    // ...
+                ];
 
-            /** @psalm-param non-empty-string $key */
-            public function createMissingValueResultForKey(string $key): Result
-            {
-                if (array_key_exists($key, self::MISSING_KEY_MAP)) {
-                    return Result::forMissingValue($key, self::MISSING_KEY_MAP[$key]);
+                /** @psalm-param non-empty-string $key */
+                public function __invoke(string $key): Result
+                {
+                    if (array_key_exists($key, self::MISSING_KEY_MAP)) {
+                        return Result::forMissingValue($key, self::MISSING_KEY_MAP[$key]);
+                    }
+
+                    return Result::forMissingValue($key);
                 }
-
-                return Result::forMissingValue($key);
             }
-        };
+        );
+        $options->addRule($this->createDummyRule('title', required: true));
 
-        $ruleSet->add($this->createDummyRule('title', required: true));
-        $result = $ruleSet->validate([]);
+        $ruleSet = new RuleSet($options);
+        $result  = $ruleSet->validate([]);
 
         $this->assertFalse($result->isValid());
         $this->assertSame('Please provide a title', $result->getResultForKey('title')->message());
@@ -226,11 +224,12 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetCreatesValidResultSetUsingMap(): void
     {
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-        $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
-        $ruleSet->add($this->createDummyRule('third', default: 1));
-        $ruleSet->add($this->createDummyRule('fourth', required: true));
+        $ruleSet = RuleSet::createWithRules(
+            $this->createDummyRule('first'),
+            $this->createDummyRule('second', required: true, default: 'string'),
+            $this->createDummyRule('third', default: 1),
+            $this->createDummyRule('fourth', required: true),
+        );
 
         $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
 
@@ -247,10 +246,8 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetOmitsResultsForKeysNotMatchingAnyRules(): void
     {
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-
-        $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
+        $ruleSet = RuleSet::createWithRules($this->createDummyRule('first'));
+        $form    = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
 
         $this->assertInstanceOf(ResultSet::class, $form);
         $this->assertTrue(isset($form->first));
@@ -260,10 +257,8 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetUsesNullForOptionalRulesWithNoDefaultValueAndNoValueInValueMap(): void
     {
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first'));
-
-        $form = $ruleSet->createValidResultSet();
+        $ruleSet = RuleSet::createWithRules($this->createDummyRule('first'));
+        $form    = $ruleSet->createValidResultSet();
 
         $this->assertInstanceOf(ResultSet::class, $form);
         $this->assertTrue(isset($form->first));
@@ -272,8 +267,7 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetRaisesExceptionForRequiredRulesWithNoDefaultAndNoValueInValueMap(): void
     {
-        $ruleSet = new RuleSet();
-        $ruleSet->add($this->createDummyRule('first', required: true));
+        $ruleSet = RuleSet::createWithRules($this->createDummyRule('first', required: true));
 
         $this->expectException(RequiredRuleWithNoDefaultValueException::class);
         $ruleSet->createValidResultSet();
@@ -281,14 +275,16 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetUsesProvidedResultSetClassNameWhenPresent(): void
     {
-        /** @var RuleSet<CustomResultSet> $ruleSet */
-        $ruleSet = RuleSet::createWithResultSetClass(CustomResultSet::class);
-        $ruleSet->add($this->createDummyRule('first'));
-        $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
-        $ruleSet->add($this->createDummyRule('third', default: 1));
-        $ruleSet->add($this->createDummyRule('fourth', required: true));
+        $options = new RuleSetOptions();
+        $options->setResultSetClass(CustomResultSet::class);
+        $options->addRule($this->createDummyRule('first'));
+        $options->addRule($this->createDummyRule('second', required: true, default: 'string'));
+        $options->addRule($this->createDummyRule('third', default: 1));
+        $options->addRule($this->createDummyRule('fourth', required: true));
 
-        $form = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
+        /** @var RuleSet<CustomResultSet> $ruleSet */
+        $ruleSet = new RuleSet($options);
+        $form    = $ruleSet->createValidResultSet(['first' => 'initial value', 'fourth' => 42]);
 
         $this->assertInstanceOf(CustomResultSet::class, $form);
         $this->assertSame('initial value', $form->first->value());
@@ -297,16 +293,18 @@ class RuleSetTest extends TestCase
         $this->assertSame(42, $form->fourth->value());
     }
 
-    public function testValidateAllowsProvidingAlternateResultClassName(): void
+    public function testValidateReturnsAlternateResultClassNameProvidedViaOptions(): void
     {
-        /** @var RuleSet<CustomResultSet> $ruleSet */
-        $ruleSet = RuleSet::createWithResultSetClass(CustomResultSet::class);
-        $ruleSet->add($this->createDummyRule('first'));
-        $ruleSet->add($this->createDummyRule('second', required: true, default: 'string'));
-        $ruleSet->add($this->createDummyRule('third', default: 1));
-        $ruleSet->add($this->createDummyRule('fourth', required: true));
+        $options = new RuleSetOptions();
+        $options->setResultSetClass(CustomResultSet::class);
+        $options->addRule($this->createDummyRule('first'));
+        $options->addRule($this->createDummyRule('second', required: true, default: 'string'));
+        $options->addRule($this->createDummyRule('third', default: 1));
+        $options->addRule($this->createDummyRule('fourth', required: true));
 
-        $result = $ruleSet->validate(['some' => 'data']);
+        /** @var RuleSet<CustomResultSet> $ruleSet */
+        $ruleSet = new RuleSet($options);
+        $result  = $ruleSet->validate(['some' => 'data']);
 
         $this->assertInstanceOf(CustomResultSet::class, $result);
     }

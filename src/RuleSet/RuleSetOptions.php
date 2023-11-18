@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation\RuleSet;
 
-use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\CreateMissingValueResult;
+use Phly\RuleValidation\Result\MissingValueResultFactory;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
-use Phly\RuleValidation\ValidationResult;
-
-use function is_callable;
 
 class RuleSetOptions implements Options
 {
     /** @var class-string<ResultSet> */
     private string $resultSetClass = ResultSet::class;
 
-    /** @var null|callable(non-empty-string): ValidationResult */
+    /** @var null|CreateMissingValueResult */
     private $missingValueResultFactory;
 
     /** @var Rule[] */
@@ -28,12 +26,10 @@ class RuleSetOptions implements Options
         return $this->resultSetClass;
     }
 
-    /** @return callable(non-empty-string): ValidationResult */
-    public function missingValueResultFactory(): callable
+    public function missingValueResultFactory(): CreateMissingValueResult
     {
-        if (! is_callable($this->missingValueResultFactory)) {
-            // phpcs:ignore Generic.Files.LineLength.TooLong
-            return /** @param non-empty-string $key */ fn (string $key): ValidationResult => Result::forMissingValue($key);
+        if (null === $this->missingValueResultFactory) {
+            return new MissingValueResultFactory();
         }
 
         return $this->missingValueResultFactory;
@@ -51,8 +47,7 @@ class RuleSetOptions implements Options
         $this->resultSetClass = $class;
     }
 
-    /** @param callable(non-empty-string): ValidationResult $factory */
-    public function setMissingValueResultFactory(callable $factory): void
+    public function setMissingValueResultFactory(CreateMissingValueResult $factory): void
     {
         $this->missingValueResultFactory = $factory;
     }

@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols, PSR12.Files.FileHeader.SpacingAfterBlock, PSR12.Files.FileHeader.IncorrectOrder, SlevomatCodingStandard.TypeHints.DeclareStrictTypes.IncorrectWhitespaceBeforeDeclare
 
 declare(strict_types=1);
 
@@ -7,10 +7,10 @@ namespace Phly\RuleValidation\RuleSet;
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
 use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
 use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\CreateMissingValueResult;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
 use Phly\RuleValidation\RuleSetValidator;
-use Phly\RuleValidation\ValidationResult;
 
 use function array_key_exists;
 
@@ -18,19 +18,15 @@ use function array_key_exists;
  * @template T of ResultSet
  * @template-implements RuleSetValidator<T>
  */
-class RuleSet implements RuleSetValidator
+readonly class RuleSet implements RuleSetValidator
 {
     /** @var class-string<T> */
-    private readonly string $resultSetClass;
+    private string $resultSetClass;
 
-    /**
-     * @readonly
-     * @var callable(non-empty-string): ValidationResult
-     */
-    private $missingValueResultFactory;
+    private CreateMissingValueResult $missingValueResultFactory;
 
     /** @var array<string, Rule> */
-    private array $rules = [];
+    private array $rules;
 
     /** @return self<ResultSet> */
     public static function createWithRules(Rule ...$rules): self
@@ -97,8 +93,8 @@ class RuleSet implements RuleSetValidator
      */
     final public function validate(array $data): ResultSet
     {
-        $missingValueResultFactory = $this->missingValueResultFactory;
-        $resultSet                 = new ($this->resultSetClass)();
+        $createMissingValueResult = $this->missingValueResultFactory;
+        $resultSet                = new ($this->resultSetClass)();
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
@@ -109,7 +105,7 @@ class RuleSet implements RuleSetValidator
             }
 
             if ($rule->required()) {
-                $resultSet->add($missingValueResultFactory($key));
+                $resultSet->add($createMissingValueResult($key));
                 continue;
             }
 

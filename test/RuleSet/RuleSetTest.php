@@ -8,10 +8,12 @@ use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
 use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
 use Phly\RuleValidation\Exception\ResultSetFrozenException;
 use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\CreateMissingValueResult;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
 use Phly\RuleValidation\RuleSet\RuleSet;
 use Phly\RuleValidation\RuleSet\RuleSetOptions;
+use Phly\RuleValidation\ValidationResult;
 use PhlyTest\RuleValidation\TestAsset\CustomResultSet;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
@@ -162,14 +164,14 @@ class RuleSetTest extends TestCase
     {
         $options = new RuleSetOptions();
         $options->setMissingValueResultFactory(
-            new class {
+            new class implements CreateMissingValueResult {
                 private const MISSING_KEY_MAP = [
                     'title' => 'Please provide a title',
                     // ...
                 ];
 
                 /** @psalm-param non-empty-string $key */
-                public function __invoke(string $key): Result
+                public function __invoke(string $key): ValidationResult
                 {
                     if (array_key_exists($key, self::MISSING_KEY_MAP)) {
                         return Result::forMissingValue($key, self::MISSING_KEY_MAP[$key]);

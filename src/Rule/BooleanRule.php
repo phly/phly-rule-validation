@@ -18,7 +18,10 @@ class BooleanRule implements Rule
         /** @var non-empty-string */
         private string $key,
         private bool $required = true,
-        private bool $default = false,
+        /** @var null|ValidationResult $default When not provided, a Result instance with value false is used */
+        private ?ValidationResult $default = null,
+        /** @var null|ValidationResult $default When not provided, a Result instance is used */
+        private ?ValidationResult $missingResult = null,
     ) {
     }
 
@@ -49,8 +52,13 @@ class BooleanRule implements Rule
         return Result::forValidValue($this->key, $value);
     }
 
-    public function default(): bool
+    public function default(): ValidationResult
     {
-        return $this->default;
+        return $this->default ?: Result::forValidValue($this->key, false);
+    }
+
+    public function missing(): ValidationResult
+    {
+        return $this->missingResult ?: Result::forMissingValue($this->key);
     }
 }

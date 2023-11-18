@@ -34,7 +34,7 @@ class CallbackRuleTest extends TestCase
     #[Depends('testCallbackRuleUsesProvidedKey')]
     public function testCallbackRuleHasNullDefaultIfNoDefaultProvided(CallbackRule $rule): void
     {
-        $this->assertNull($rule->default());
+        $this->assertNull($rule->default()->value());
     }
 
     public function testCallbackRuleAcceptsDefaultValueViaConstructor(): void
@@ -44,10 +44,10 @@ class CallbackRuleTest extends TestCase
         $rule    = new CallbackRule(
             $key,
             fn (mixed $value) => Result::forValidValue($key, $value),
-            default: $default,
+            default: Result::forValidValue($key, $default),
         );
 
-        $this->assertSame($default, $rule->default());
+        $this->assertSame($default, $rule->default()->value());
     }
 
     public function testCallbackRuleAcceptsRequiredFlagViaConstructor(): void
@@ -78,5 +78,13 @@ class CallbackRuleTest extends TestCase
 
         $this->assertTrue($result->isValid());
         $this->assertSame($resultValue, $result->value());
+    }
+
+    #[Depends('testCallbackRuleUsesProvidedKey')]
+    public function testMissingReturnsResultByDefault(CallbackRule $rule): void
+    {
+        $missing = $rule->missing();
+        $this->assertInstanceOf(Result::class, $missing);
+        $this->assertFalse($missing->isValid());
     }
 }

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace PhlyTest\RuleValidation\RuleSet;
 
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
-use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
-use Phly\RuleValidation\Result\CreateMissingValueResult;
 use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
@@ -15,8 +13,6 @@ use Phly\RuleValidation\RuleSet\RuleSetOptions;
 use Phly\RuleValidation\ValidationResult;
 use PhlyTest\RuleValidation\TestAsset\CustomResultSet;
 use PHPUnit\Framework\TestCase;
-
-use function array_key_exists;
 
 class RuleSetTest extends TestCase
 {
@@ -149,36 +145,6 @@ class RuleSetTest extends TestCase
         $this->assertEquals($expected, $result->getValues());
     }
 
-    public function testValidationAllowsOverridingMissingValueMessageViaOptions(): void
-    {
-        $options = new RuleSetOptions();
-        $options->setMissingValueResultFactory(
-            new class implements CreateMissingValueResult {
-                private const MISSING_KEY_MAP = [
-                    'title' => 'Please provide a title',
-                    // ...
-                ];
-
-                /** @psalm-param non-empty-string $key */
-                public function __invoke(string $key): ValidationResult
-                {
-                    if (array_key_exists($key, self::MISSING_KEY_MAP)) {
-                        return Result::forMissingValue($key, self::MISSING_KEY_MAP[$key]);
-                    }
-
-                    return Result::forMissingValue($key);
-                }
-            }
-        );
-        $options->addRule($this->createDummyRule('title', required: true));
-
-        $ruleSet = new RuleSet($options);
-        $result  = $ruleSet->validate([]);
-
-        $this->assertFalse($result->isValid());
-        $this->assertSame('Please provide a title', $result->getResult('title')->message());
-    }
-
     /** @param non-empty-string $name */
     private function createDummyRule(string $name, mixed $default = null, bool $required = false): Rule
     {
@@ -206,9 +172,14 @@ class RuleSetTest extends TestCase
                 return Result::forValidValue($this->name, $value);
             }
 
-            public function default(): mixed
+            public function default(): ValidationResult
             {
-                return $this->default;
+                return Result::forValidValue($this->name, $this->default);
+            }
+
+            public function missing(): ValidationResult
+            {
+                return Result::forMissingValue($this->name);
             }
         };
     }
@@ -256,12 +227,15 @@ class RuleSetTest extends TestCase
         $this->assertNull($form->first->value());
     }
 
-    public function testCreateValidResultSetRaisesExceptionForRequiredRulesWithNoDefaultAndNoValueInValueMap(): void
+    public function testCreateValidResultSetReturnsRuleDefaultResultForRequiredRulesWithNoValueInValueMap(): void
     {
-        $ruleSet = RuleSet::createWithRules($this->createDummyRule('first', required: true));
+        $ruleSet   = RuleSet::createWithRules($this->createDummyRule('first', required: true));
 
-        $this->expectException(RequiredRuleWithNoDefaultValueException::class);
-        $ruleSet->createValidResultSet();
+        $resultSet = $ruleSet->createValidResultSet();
+        $result    = $resultSet->getResult('first');
+
+        $this->assertInstanceOf(ValidationResult::class, $result);
+        $this->assertNull($result->value());
     }
 
     public function testCreateValidResultSetUsesProvidedResultSetClassNameWhenPresent(): void

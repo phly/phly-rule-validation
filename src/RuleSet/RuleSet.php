@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Phly\RuleValidation\RuleSet;
 
 use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
-use Phly\RuleValidation\Exception\RequiredRuleWithNoDefaultValueException;
-use Phly\RuleValidation\Result\CreateMissingValueResult;
 use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\ResultSet;
 use Phly\RuleValidation\Rule;
@@ -22,8 +20,6 @@ class RuleSet implements RuleSetValidator
 {
     /** @var class-string<T> */
     private readonly string $resultSetClass;
-
-    private readonly CreateMissingValueResult $missingValueResultFactory;
 
     /** @var array<string, Rule> */
     private readonly array $rules;
@@ -43,8 +39,7 @@ class RuleSet implements RuleSetValidator
     {
         /** @todo Remove suppression once Psalm can match concrete class name to template */
         /** @psalm-suppress PropertyTypeCoercion */
-        $this->resultSetClass            = $options->resultSetClass();
-        $this->missingValueResultFactory = $options->missingValueResultFactory();
+        $this->resultSetClass = $options->resultSetClass();
 
         $rules = [];
         foreach ($options->rules() as $rule) {
@@ -71,11 +66,7 @@ class RuleSet implements RuleSetValidator
                 continue;
             }
 
-            if ($rule->required() && null === $rule->default()) {
-                throw RequiredRuleWithNoDefaultValueException::forKey($key, ResultSet::class);
-            }
-
-            $results[] = Result::forValidValue($key, $rule->default());
+            $results[] = Result::forValidValue($key, $rule->default()->value());
         }
 
         return new ($this->resultSetClass)(...$results);
@@ -105,8 +96,7 @@ class RuleSet implements RuleSetValidator
      */
     final public function validate(array $data): ResultSet
     {
-        $createMissingValueResult = $this->missingValueResultFactory;
-        $results                  = [];
+        $results = [];
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
@@ -117,11 +107,11 @@ class RuleSet implements RuleSetValidator
             }
 
             if ($rule->required()) {
-                $results[] = $createMissingValueResult($key);
+                $results[] = $rule->missing();
                 continue;
             }
 
-            $results[] = Result::forValidValue($key, $rule->default());
+            $results[] = $rule->default();
         }
 
         return new ($this->resultSetClass)(...$results);

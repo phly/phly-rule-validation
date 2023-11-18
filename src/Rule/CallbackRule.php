@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Phly\RuleValidation\Rule;
 
+use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\Rule;
 use Phly\RuleValidation\ValidationResult;
 
@@ -18,7 +19,8 @@ final class CallbackRule implements Rule
         private string $key,
         callable $callback,
         private bool $required = true,
-        private mixed $default = null,
+        private ?ValidationResult $default = null,
+        private ?ValidationResult $missing = null,
     ) {
         $this->callback = $callback;
     }
@@ -43,8 +45,13 @@ final class CallbackRule implements Rule
         return ($this->callback)($value, $context, $this->key);
     }
 
-    public function default(): mixed
+    public function default(): ValidationResult
     {
-        return $this->default;
+        return $this->default ?: Result::forValidValue($this->key, null);
+    }
+
+    public function missing(): ValidationResult
+    {
+        return $this->missing ?: Result::forMissingValue($this->key);
     }
 }

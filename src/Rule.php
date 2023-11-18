@@ -22,6 +22,9 @@ interface Rule
      */
     public function validate(mixed $value, array $context): ValidationResult;
 
-    /** Default value to use when not required and no value provided */
-    public function default(): mixed;
+    /** ValidationResult to use when not required and no value provided */
+    public function default(): ValidationResult;
+
+    /** ValidationResult to use when required but no value provided */
+    public function missing(): ValidationResult;
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhlyTest\RuleValidation\Rule;
 
 use Generator;
+use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\Rule\BooleanRule;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -48,5 +49,22 @@ class BooleanRuleTest extends TestCase
         $result = $rule->validate(false, []);
         $this->assertTrue($result->isValid());
         $this->assertFalse($result->value());
+    }
+
+    public function testDefaultReturnsResultWrappingFalse(): void
+    {
+        $rule    = new BooleanRule(key: 'flag');
+        $default = $rule->default();
+        $this->assertInstanceOf(Result::class, $default);
+        $this->assertTrue($default->isValid());
+        $this->assertFalse($default->value());
+    }
+
+    public function testMissingReturnsResult(): void
+    {
+        $rule    = new BooleanRule(key: 'flag');
+        $missing = $rule->missing();
+        $this->assertInstanceOf(Result::class, $missing);
+        $this->assertFalse($missing->isValid());
     }
 }

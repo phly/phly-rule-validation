@@ -82,6 +82,18 @@ class RuleSet implements RuleSetValidator
     }
 
     /** @param non-empty-string $key */
+    final public function __isset($key): bool
+    {
+        return array_key_exists($key, $this->rules);
+    }
+
+    /** @param non-empty-string $key */
+    final public function __get($key): ?Rule
+    {
+        return $this->__isset($key) ? $this->rules[$key] : null;
+    }
+
+    /** @param non-empty-string $key */
     final public function getRule(string $key): ?Rule
     {
         return array_key_exists($key, $this->rules) ? $this->rules[$key] : null;

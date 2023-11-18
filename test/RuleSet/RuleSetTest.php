@@ -299,4 +299,30 @@ class RuleSetTest extends TestCase
 
         $this->assertInstanceOf(CustomResultSet::class, $result);
     }
+
+    public function testIssetOnExistingRuleKeyReturnsTrue(): void
+    {
+        $ruleSet = RuleSet::createWithRules($this->createDummyRule('first'));
+        $this->assertTrue(isset($ruleSet->first));
+    }
+
+    public function testIssetOnNonExistentRuleKeyReturnsFalse(): void
+    {
+        $ruleSet = RuleSet::createWithRules();
+        $this->assertFalse(isset($ruleSet->first));
+    }
+
+    public function testCanAccessRuleViaPropertyAccess(): void
+    {
+        $rule    = $this->createDummyRule('first');
+        $ruleSet = RuleSet::createWithRules($rule);
+
+        $this->assertSame($rule, $ruleSet->first);
+    }
+
+    public function testPropertyAccessOfNonExistentRuleReturnsNull(): void
+    {
+        $ruleSet = RuleSet::createWithRules();
+        $this->assertNull($ruleSet->first);
+    }
 }

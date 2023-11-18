@@ -108,7 +108,6 @@ class NestedResult implements ValidationResult
     public static function forMissingValue(string $key, string $message = self::MISSING_MESSAGE): self
     {
         $resultSet = new ResultSet();
-        $resultSet->freeze();
         return new self(key: $key, isValid: false, value: $resultSet, message: $message);
     }
 

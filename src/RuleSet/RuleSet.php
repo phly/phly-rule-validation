@@ -61,13 +61,13 @@ readonly class RuleSet implements RuleSetValidator
      */
     public function createValidResultSet(array $valueMap = []): ResultSet
     {
-        $resultSet = new ($this->resultSetClass)();
+        $results = [];
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
             /** @psalm-var non-empty-string $key */
             if (array_key_exists($key, $valueMap)) {
-                $resultSet->add(Result::forValidValue($key, $valueMap[$key]));
+                $results[] = Result::forValidValue($key, $valueMap[$key]);
                 continue;
             }
 
@@ -75,10 +75,10 @@ readonly class RuleSet implements RuleSetValidator
                 throw RequiredRuleWithNoDefaultValueException::forKey($key, ResultSet::class);
             }
 
-            $resultSet->add(Result::forValidValue($key, $rule->default()));
+            $results[] = Result::forValidValue($key, $rule->default());
         }
 
-        return $resultSet;
+        return new ($this->resultSetClass)(...$results);
     }
 
     /** @param non-empty-string $key */
@@ -94,26 +94,25 @@ readonly class RuleSet implements RuleSetValidator
     final public function validate(array $data): ResultSet
     {
         $createMissingValueResult = $this->missingValueResultFactory;
-        $resultSet                = new ($this->resultSetClass)();
+        $results                  = [];
 
         foreach ($this->rules as $rule) {
             $key = $rule->key();
             /** @psalm-var non-empty-string $key */
             if (array_key_exists($key, $data)) {
-                $resultSet->add($rule->validate($data[$key], $data));
+                $results[] = $rule->validate($data[$key], $data);
                 continue;
             }
 
             if ($rule->required()) {
-                $resultSet->add($createMissingValueResult($key));
+                $results[] = $createMissingValueResult($key);
                 continue;
             }
 
-            $resultSet->add(Result::forValidValue($key, $rule->default()));
+            $results[] = Result::forValidValue($key, $rule->default());
         }
 
-        $resultSet->freeze();
-        return $resultSet;
+        return new ($this->resultSetClass)(...$results);
     }
 
     /**

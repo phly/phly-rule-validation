@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PhlyTest\RuleValidation;
 
-use Phly\RuleValidation\Exception\ResultSetFrozenException;
 use Phly\RuleValidation\Exception\UnknownResultException;
 use Phly\RuleValidation\Result\Result;
 use Phly\RuleValidation\ResultSet;
@@ -18,12 +17,12 @@ class ResultSetTest extends TestCase
         $result2   = Result::forValidValue('second', 2);
         $result3   = Result::forValidValue('third', 3);
         $result4   = Result::forValidValue('fourth', 4);
-        $resultSet = new ResultSet();
-
-        $resultSet->add($result1);
-        $resultSet->add($result2);
-        $resultSet->add($result3);
-        $resultSet->add($result4);
+        $resultSet = new ResultSet(
+            $result1,
+            $result2,
+            $result3,
+            $result4,
+        );
 
         $this->assertTrue($resultSet->isValid());
     }
@@ -34,12 +33,12 @@ class ResultSetTest extends TestCase
         $result2   = Result::forValidValue('second', 2);
         $result3   = Result::forInvalidValue('third', 3, 'not a valid value');
         $result4   = Result::forValidValue('fourth', 4);
-        $resultSet = new ResultSet();
-
-        $resultSet->add($result1);
-        $resultSet->add($result2);
-        $resultSet->add($result3);
-        $resultSet->add($result4);
+        $resultSet = new ResultSet(
+            $result1,
+            $result2,
+            $result3,
+            $result4,
+        );
 
         $this->assertFalse($resultSet->isValid());
     }
@@ -79,18 +78,17 @@ class ResultSetTest extends TestCase
     public function testUsingAddSetsOffsetKeyToResultKey(): void
     {
         $result    = Result::forValidValue('first', 1);
-        $resultSet = new ResultSet();
-        $resultSet->add($result);
+        $resultSet = new ResultSet($result);
 
-        $this->assertSame($result, $resultSet->getResultForKey('first'));
+        $this->assertSame($result, $resultSet->getResult('first'));
     }
 
-    public function testCallingGetResultForKeyRaisesUnknownResultExceptionIfKeyUnrecognized(): void
+    public function testCallingGetResultRaisesUnknownResultExceptionIfKeyUnrecognized(): void
     {
         $resultSet = new ResultSet();
 
         $this->expectException(UnknownResultException::class);
-        $resultSet->getResultForKey('first');
+        $resultSet->getResult('first');
     }
 
     public function testAccessingResultByOffsetRaisesUnknownResultExceptionIfKeyUnrecognized(): void
@@ -98,16 +96,7 @@ class ResultSetTest extends TestCase
         $resultSet = new ResultSet();
 
         $this->expectException(UnknownResultException::class);
-        $resultSet->getResultForKey('first');
-    }
-
-    public function testAttemptingToAddAResultToAFrozenResultSetRaisesException(): void
-    {
-        $resultSet = new ResultSet();
-        $resultSet->freeze();
-
-        $this->expectException(ResultSetFrozenException::class);
-        $resultSet->add(Result::forValidValue('flag', true));
+        $resultSet->getResult('first');
     }
 
     public function testAllowsAccessOfIndividualResultsViaPropertyAccessViaKey(): void

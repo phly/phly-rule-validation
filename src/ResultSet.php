@@ -37,16 +37,18 @@ use function count;
  */
 class ResultSet implements Countable, IteratorAggregate
 {
-    private bool $frozen = false;
-
     /** @var array<string, ValidationResult> */
-    private $results = [];
+    private readonly array $results;
 
     final public function __construct(ValidationResult ...$results)
     {
+        $indexedResults = [];
         foreach ($results as $result) {
-            $this->add($result);
+            $key = $result->key();
+            $this->guardForDuplicateKey($key, $indexedResults);
+            $indexedResults[$key] = $result;
         }
+        $this->results = $indexedResults;
     }
 
     final public function __isset(string $name): bool
@@ -59,7 +61,7 @@ class ResultSet implements Countable, IteratorAggregate
         return array_key_exists($key, $this->results) ? $this->results[$key] : null;
     }
 
-    public function count(): int
+    final public function count(): int
     {
         return count($this->results);
     }
@@ -70,20 +72,8 @@ class ResultSet implements Countable, IteratorAggregate
         return new ArrayIterator($this->results);
     }
 
-    final public function add(ValidationResult $result): void
-    {
-        if ($this->frozen) {
-            throw new Exception\ResultSetFrozenException();
-        }
-
-        /** @psalm-var non-empty-string $key */
-        $key = $result->key();
-        $this->guardForDuplicateKey($key);
-        $this->results[$key] = $result;
-    }
-
     /** @throws Exception\UnknownResultException */
-    final public function getResultForKey(string $key): ValidationResult
+    final public function getResult(string $key): ValidationResult
     {
         foreach ($this as $result) {
             if ($result->key() === $key) {
@@ -130,19 +120,13 @@ class ResultSet implements Countable, IteratorAggregate
     }
 
     /**
-     * Freeze the result set
-     *
-     * Once called, no more results may be added to the result set.
+     * @param non-empty-string $key
+     * @param array<non-empty-string, ValidationResult> $results
+     * @throws Exception\DuplicateResultKeyException
      */
-    final public function freeze(): void
+    private function guardForDuplicateKey(string $key, array $results): void
     {
-        $this->frozen = true;
-    }
-
-    /** @throws Exception\DuplicateResultKeyException */
-    private function guardForDuplicateKey(string $key): void
-    {
-        if (array_key_exists($key, $this->results)) {
+        if (array_key_exists($key, $results)) {
             throw Exception\DuplicateResultKeyException::forKey($key);
         }
     }

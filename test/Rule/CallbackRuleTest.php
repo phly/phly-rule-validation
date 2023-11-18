@@ -68,8 +68,8 @@ class CallbackRuleTest extends TestCase
         $key         = 'fieldKey';
         $resultValue = 'string';
         $result      = Result::forValidValue($key, $resultValue);
-        /** @var callable(mixed, array<non-empty-string, mixed>, non-empty-string): Result $callback */
-        $callback    = function (mixed $value, array $context, string $key) use ($result): Result {
+        /** @psalm-var callable(mixed, array<non-empty-string, mixed>, non-empty-string): Result $callback */
+        $callback = function (mixed $value, array $context, string $key) use ($result): Result {
             return $result;
         };
 

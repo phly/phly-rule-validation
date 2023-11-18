@@ -18,15 +18,15 @@ use function array_key_exists;
  * @template T of ResultSet
  * @template-implements RuleSetValidator<T>
  */
-readonly class RuleSet implements RuleSetValidator
+class RuleSet implements RuleSetValidator
 {
     /** @var class-string<T> */
-    private string $resultSetClass;
+    private readonly string $resultSetClass;
 
-    private CreateMissingValueResult $missingValueResultFactory;
+    private readonly CreateMissingValueResult $missingValueResultFactory;
 
     /** @var array<string, Rule> */
-    private array $rules;
+    private readonly array $rules;
 
     /** @return self<ResultSet> */
     public static function createWithRules(Rule ...$rules): self

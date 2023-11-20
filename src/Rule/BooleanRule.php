@@ -18,9 +18,9 @@ class BooleanRule implements Rule
         /** @var non-empty-string */
         private string $key,
         private bool $required = true,
-        /** @var null|ValidationResult $default When not provided, a Result instance with value false is used */
+        /** @var null|ValidationResult When not provided, a Result instance with value false is used */
         private ?ValidationResult $default = null,
-        /** @var null|ValidationResult $default When not provided, a Result instance is used */
+        /** @var null|ValidationResult When not provided, a Result instance is used */
         private ?ValidationResult $missingResult = null,
     ) {
     }

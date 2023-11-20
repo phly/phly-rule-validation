@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file, in reverse 
 
 ### Added
 
+- Adds support for PHP 8.3.
+
 - Adds `ValidationResult` interface, defining the key, value, validity, and error messages for a validation result.
 - Adds `RuleSetValidator` interface, defining how to validate a rule set, create a default initial valid result set based on the rule set, and retrieve individual rules from the rule set.
 - Adds the `Phly\RuleValidation\RuleSet\Options` interface.

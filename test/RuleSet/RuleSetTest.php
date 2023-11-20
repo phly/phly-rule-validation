@@ -229,7 +229,7 @@ class RuleSetTest extends TestCase
 
     public function testCreateValidResultSetReturnsRuleDefaultResultForRequiredRulesWithNoValueInValueMap(): void
     {
-        $ruleSet   = RuleSet::createWithRules($this->createDummyRule('first', required: true));
+        $ruleSet = RuleSet::createWithRules($this->createDummyRule('first', required: true));
 
         $resultSet = $ruleSet->createValidResultSet();
         $result    = $resultSet->getResult('first');

@@ -7,7 +7,7 @@ Almost every interface and implementation in the library provides type templates
 
 Recall that the [`ValidationResult` class](../reference/result.md) declares the following as part of its definition:
 
-```
+```php
 namespace Phly\RuleValidation;
 
 /**

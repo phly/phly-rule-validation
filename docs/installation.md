@@ -14,4 +14,4 @@ For type inference, we recommend using a static analysis tool such as [Psalm](ht
 
 -----
 
-- [Back to Table of Contents](../README.md)
+- [Back to Table of Contents](./README.md)

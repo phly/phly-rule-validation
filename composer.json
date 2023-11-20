@@ -17,7 +17,8 @@
             "php": "8.2.99"
         },
         "allow-plugins": {
-            "dealerdirect/phpcodesniffer-composer-installer": true
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "composer/package-versions-deprecated": true
         }
     },
     "require": {
@@ -37,7 +38,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "PhlyTest\\": "test/"
+            "PhlyTest\\RuleValidation\\": "test/"
         }
     },
     "scripts": {

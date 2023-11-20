@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PhlyTest\RuleValidation;
+namespace PhlyTest\RuleValidation\Result;
 
 use Generator;
-use Phly\RuleValidation\Result;
+use Phly\RuleValidation\Result\Result;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -44,9 +44,9 @@ class ResultTest extends TestCase
         $result = Result::forValidValue('key', $value);
 
         $this->assertInstanceOf(Result::class, $result);
-        $this->assertTrue($result->isValid);
-        $this->assertSame($value, $result->value);
-        $this->assertNull($result->message);
+        $this->assertTrue($result->isValid());
+        $this->assertSame($value, $result->value());
+        $this->assertNull($result->message());
     }
 
     #[DataProvider('valueProvider')]
@@ -56,9 +56,9 @@ class ResultTest extends TestCase
         $result  = Result::forInvalidValue('key', $value, $message);
 
         $this->assertInstanceOf(Result::class, $result);
-        $this->assertFalse($result->isValid);
-        $this->assertSame($value, $result->value);
-        $this->assertSame($message, $result->message);
+        $this->assertFalse($result->isValid());
+        $this->assertSame($value, $result->value());
+        $this->assertSame($message, $result->message());
     }
 
     public function testForMissingValueMarksResultInvalidAndSetsMessage(): void
@@ -67,8 +67,8 @@ class ResultTest extends TestCase
         $result  = Result::forMissingValue('first', $message);
 
         $this->assertInstanceOf(Result::class, $result);
-        $this->assertFalse($result->isValid);
-        $this->assertNull($result->value);
-        $this->assertSame($message, $result->message);
+        $this->assertFalse($result->isValid());
+        $this->assertNull($result->value());
+        $this->assertSame($message, $result->message());
     }
 }

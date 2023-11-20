@@ -5,54 +5,78 @@ declare(strict_types=1);
 namespace Phly\RuleValidation;
 
 use ArrayIterator;
+use Countable;
 use IteratorAggregate;
 use Traversable;
 
 use function array_key_exists;
 use function array_reduce;
+use function count;
 
-/** @template-implements IteratorAggregate<Result> */
-final class ResultSet implements IteratorAggregate
+/**
+ * Validation result set
+ *
+ * The main reason to extend this class is to provide a list of expected ValidationResult
+ * mappings, with the expected ValidationResult value types:
+ *
+ * <code>
+ * /**
+ *  * @property-read Result<string> $title
+ *  * @property-read Result<string> $description
+ *  * @property-read Result<DateTimeImmutable> $creationDate
+ *  * /
+ * class CustomResultSet extends ResultSet
+ * {
+ * }
+ * </code>
+ *
+ * Doing so will give you IDE type hints, as well as allow Psalm and/or PHPStan
+ * to infer about composed ValidationResult instances correctly.
+ *
+ * @template-implements IteratorAggregate<ValidationResult>
+ */
+class ResultSet implements Countable, IteratorAggregate
 {
-    private bool $frozen = false;
+    /** @var array<string, ValidationResult> */
+    private readonly array $results;
 
-    /** @var array<string, Result> */
-    private $results = [];
-
-    public function __construct(Result ...$results)
+    final public function __construct(ValidationResult ...$results)
     {
+        $indexedResults = [];
         foreach ($results as $result) {
-            $this->add($result);
+            $key = $result->key();
+            $this->guardForDuplicateKey($key, $indexedResults);
+            $indexedResults[$key] = $result;
         }
+        $this->results = $indexedResults;
     }
 
-    public function __get(string $key): ?Result
+    final public function __isset(string $name): bool
+    {
+        return array_key_exists($name, $this->results);
+    }
+
+    final public function __get(string $key): ?ValidationResult
     {
         return array_key_exists($key, $this->results) ? $this->results[$key] : null;
     }
 
-    /** @return Traversable<Result> */
-    public function getIterator(): Traversable
+    final public function count(): int
+    {
+        return count($this->results);
+    }
+
+    /** @return Traversable<ValidationResult> */
+    final public function getIterator(): Traversable
     {
         return new ArrayIterator($this->results);
     }
 
-    public function add(Result $result): void
-    {
-        if ($this->frozen) {
-            throw new Exception\ResultSetFrozenException();
-        }
-
-        $key = $result->key;
-        $this->guardForDuplicateKey($key);
-        $this->results[$key] = $result;
-    }
-
     /** @throws Exception\UnknownResultException */
-    public function getResultForKey(string $key): Result
+    final public function getResult(string $key): ValidationResult
     {
         foreach ($this as $result) {
-            if ($result->key === $key) {
+            if ($result->key() === $key) {
                 return $result;
             }
         }
@@ -60,58 +84,49 @@ final class ResultSet implements IteratorAggregate
         throw Exception\UnknownResultException::forKey($key);
     }
 
-    public function isValid(): bool
+    final public function isValid(): bool
     {
-        return array_reduce($this->results, function (bool $isValid, Result $result): bool {
-            if ($isValid === false) {
-                return false;
-            }
-            return $result->isValid;
+        return array_reduce($this->results, function (bool $isValid, ValidationResult $result): bool {
+            return $isValid === false ? false : $result->isValid();
         }, true);
     }
 
     /** @return array<array-key, null|string> */
-    public function getMessages(): array
+    final public function getMessages(): array
     {
         $messages = [];
         foreach ($this->results as $key => $result) {
-            /** @var string $key */
-            if ($result->isValid) {
+            /** @var non-empty-string $key */
+            if ($result->isValid()) {
                 continue;
             }
-            $messages[$key] = $result->message;
+            $messages[$key] = $result->message();
         }
         return $messages;
     }
 
     /** @return array<string, mixed> */
-    public function getValues(): array
+    final public function getValues(): array
     {
         $values = [];
         foreach ($this->results as $key => $result) {
             /**
-             * @var string $key
+             * @var non-empty-string $key
              * @psalm-suppress MixedAssignment
              */
-            $values[$key] = $result->value;
+            $values[$key] = $result->value();
         }
         return $values;
     }
 
     /**
-     * Freeze the result set
-     *
-     * Once called, no more results may be added to the result set.
+     * @param non-empty-string $key
+     * @param array<non-empty-string, ValidationResult> $results
+     * @throws Exception\DuplicateResultKeyException
      */
-    public function freeze(): void
+    private function guardForDuplicateKey(string $key, array $results): void
     {
-        $this->frozen = true;
-    }
-
-    /** @throws Exception\DuplicateResultKeyException */
-    private function guardForDuplicateKey(string $key): void
-    {
-        if (array_key_exists($key, $this->results)) {
+        if (array_key_exists($key, $results)) {
             throw Exception\DuplicateResultKeyException::forKey($key);
         }
     }

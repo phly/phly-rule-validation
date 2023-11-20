@@ -1,0 +1,131 @@
+<?php // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols, PSR12.Files.FileHeader.SpacingAfterBlock, PSR12.Files.FileHeader.IncorrectOrder, SlevomatCodingStandard.TypeHints.DeclareStrictTypes.IncorrectWhitespaceBeforeDeclare
+
+declare(strict_types=1);
+
+namespace Phly\RuleValidation\RuleSet;
+
+use Phly\RuleValidation\Exception\DuplicateRuleKeyException;
+use Phly\RuleValidation\Result\Result;
+use Phly\RuleValidation\ResultSet;
+use Phly\RuleValidation\Rule;
+use Phly\RuleValidation\RuleSetValidator;
+
+use function array_key_exists;
+
+/**
+ * @template T of ResultSet
+ * @template-implements RuleSetValidator<T>
+ */
+class RuleSet implements RuleSetValidator
+{
+    /** @var class-string<T> */
+    private readonly string $resultSetClass;
+
+    /** @var array<string, Rule> */
+    private readonly array $rules;
+
+    /** @return self<ResultSet> */
+    public static function createWithRules(Rule ...$rules): self
+    {
+        $options = new RuleSetOptions();
+        foreach ($rules as $rule) {
+            $options->addRule($rule);
+        }
+
+        return new self($options);
+    }
+
+    public function __construct(Options $options)
+    {
+        /** @todo Remove suppression once Psalm can match concrete class name to template */
+        /** @psalm-suppress PropertyTypeCoercion */
+        $this->resultSetClass = $options->resultSetClass();
+
+        $rules = [];
+        foreach ($options->rules() as $rule) {
+            $key = $rule->key();
+            $this->guardForDuplicateKey($key, $rules);
+            $rules[$key] = $rule;
+        }
+        $this->rules = $rules;
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $valueMap
+     * @return T
+     */
+    public function createValidResultSet(array $valueMap = []): ResultSet
+    {
+        $results = [];
+
+        foreach ($this->rules as $rule) {
+            $key = $rule->key();
+            /** @psalm-var non-empty-string $key */
+            if (array_key_exists($key, $valueMap)) {
+                $results[] = Result::forValidValue($key, $valueMap[$key]);
+                continue;
+            }
+
+            $results[] = Result::forValidValue($key, $rule->default()->value());
+        }
+
+        return new ($this->resultSetClass)(...$results);
+    }
+
+    /** @param non-empty-string $key */
+    final public function __isset($key): bool
+    {
+        return array_key_exists($key, $this->rules);
+    }
+
+    /** @param non-empty-string $key */
+    final public function __get($key): ?Rule
+    {
+        return $this->__isset($key) ? $this->rules[$key] : null;
+    }
+
+    /** @param non-empty-string $key */
+    final public function getRule(string $key): ?Rule
+    {
+        return array_key_exists($key, $this->rules) ? $this->rules[$key] : null;
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $data
+     * @return T
+     */
+    final public function validate(array $data): ResultSet
+    {
+        $results = [];
+
+        foreach ($this->rules as $rule) {
+            $key = $rule->key();
+            /** @psalm-var non-empty-string $key */
+            if (array_key_exists($key, $data)) {
+                $results[] = $rule->validate($data[$key], $data);
+                continue;
+            }
+
+            if ($rule->required()) {
+                $results[] = $rule->missing();
+                continue;
+            }
+
+            $results[] = $rule->default();
+        }
+
+        return new ($this->resultSetClass)(...$results);
+    }
+
+    /**
+     * @param non-empty-string $key
+     * @param array<string, Rule> $rules
+     * @throws DuplicateRuleKeyException
+     */
+    private function guardForDuplicateKey(string $key, array $rules): void
+    {
+        if (array_key_exists($key, $rules)) {
+            throw DuplicateRuleKeyException::forKey($key);
+        }
+    }
+}

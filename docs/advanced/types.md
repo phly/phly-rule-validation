@@ -144,18 +144,38 @@ Alternately, you could extend the class:
  */
 class TransactionForm extends RuleSet
 {
-    public function __construct($options)
+    public function __construct()
     {
-        $actualOptions = new ResultSetOptions();
-        $actualOptions->setResultSetClass(TransactionFormResult::class);
-        foreach($options->rules() as $rule) {
-            $actualOptions->addRule($rule);
-        }
+        $options = new ResultSetOptions();
+        $options->setResultSetClass(TransactionFormResult::class);
+        $options->addRule(/* ... */);
 
-        parent::__construct($actualOptions);
+        parent::__construct($options);
     }
 }
 ```
+
+> Setting the options explicitly in the constructor of the extending class ensures you know the state.
+> If you want to prevent child classes redefining the constructor and changing the semantics and behavior of your ruleset, create a named constructor:
+>
+> ```php
+> /**
+>  * @template-extends RuleSet<TransactionFormResult>
+>  */
+> class TransactionForm extends RuleSet
+> {
+>     public static function create(): self
+>     {
+>         $options = new ResultSetOptions();
+>         $options->setResultSetClass(TransactionFormResult::class);
+>         $options->addRule(/* ... */);
+> 
+>         return new self($options);
+>     }
+> }
+> ```
+>
+> Alternately, you can also make your constructor `final`.
 
 If you are creating an anonymous class extending `RuleSet`, use the `@template-extends` annotation:
 
